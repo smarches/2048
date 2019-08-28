@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>2048</title>
+    <link rel="stylesheet" type='text/css' href='2048.css'>
+</head>
+
+<body>
+    <div id="main">
+        <h1 id='bukk'>&ldquo;2048&rdquo;</h1>
+        <div id="ctrl" class="gird">
+            <!-- Sliders occupy 'columns' {2,3} -->
+            <div class="gird1">
+                <div class="rgird">
+                    <div class="rgird1">
+                        <datalist id='dticks'></datalist>
+                        <label for="board_size_W" id='width_slider' class='slidylabel'>Width (4)</label>
+                        <input type="range" min="2" max="20" value="4" class="slidy" id="board_size_W" list="dticks">
+                    </div>
+                    <div class="rgird2">
+                        <label for="board_size_H" id='height_slider' class='slidylabel'>Height (4)</label>
+                        <input type="range" min="2" max="20" value="4" class="slidy" id="board_size_H" list="dticks">
+                    </div>
+                </div>
+            </div>
+            <!-- other buttons occupy column {4} -->
+            <div class="gird2">
+                <!--NOTE the order (first input, then label) is crucial here!! -->
+                <input type="checkbox" id="theme1" class="cbx hidden" />
+                <label for="theme1" class="lbl"></label>
+            </div>
+            <div class="gird3">
+                <input type="button" value="Start!" id="start_game" class="btn">
+            </div>
+        </div>
+        <br>
+        <div id="board">
+        </div>
+    </div>
+    <script src='d3.js'></script>
+    <!-- track state/game logic -->
+    <script src='wp-utils.js'></script>
+    <!-- all the d3/SVG/io stuff -->
+    <script src='canvas.js'></script>
+</body>
+
+</html>
