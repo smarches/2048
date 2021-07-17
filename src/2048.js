@@ -1,11 +1,10 @@
 // reduce webpack size
-const ld = {};
-ld.range = require('lodash/range');
-ld.flattenDepth = require('lodash/flattenDepth');
-ld.toPairs = require('lodash/toPairs');
-ld.remove = require('lodash/remove');
-ld.join = require('lodash/join');
-ld.chunk = require('lodash/chunk');
+import {range} from 'lodash/range.js';
+import {flattenDepth} from 'lodash/flattenDepth.js';
+import {toPairs} from 'lodash/toPairs.js';
+import remove from 'lodash/remove.js';
+import join from 'lodash/join.js';
+import chunk from 'lodash/chunk.js';
 
 function nullish(x){
     return typeof(x) === 'undefined' || x === null || isNaN(x);
@@ -25,7 +24,7 @@ function is_truthy(x){
 function rotate_array(AA,times = 0,dir = 'clockwise') {
     times %= 4; // equivalence group
     if(times < 0) times += 4;
-    if(dir === 'clockwise') dir = 4-dir;
+    if(dir === 'clockwise') dir = 4 - dir;
     let res = [];
     let M = AA[0].length;
     switch(times) {
@@ -53,7 +52,7 @@ function sample(elems,n,replace=false) {
     let res = [];
     if(typeof elems === 'number'){
         if(is_falsy(elems) || elems < 0) return res;
-        elems = ld.range(1,Math.floor(elems+1));
+        elems = range(1,Math.floor(elems+1));
     }
     let L = elems.length;
     if(n != Math.floor(n)) return res;
@@ -63,7 +62,7 @@ function sample(elems,n,replace=false) {
         }
     } else {
         if(n >= L) return elems;
-        const ix = ld.range(L);
+        const ix = range(L);
         for(let i=0;i<n;i++){
             let ii = Math.floor(L--*Math.random());
             res.push(elems[ix[ii]]);
@@ -170,10 +169,10 @@ class tile_board {
     get w() { return this.W; }
     get h() { return this.H; }
     get vals() {
-        return ld.flattenDepth(this.cols,1).map(e => e.val);
+        return flattenDepth(this.cols,1).map(e => e.val);
     }
     get danzo() { // all done?
-        return ld.toPairs(this.end_state).reduce((a,b) => a && b[1],true);
+        return toPairs(this.end_state).reduce((a,b) => a && b[1],true);
     }
     // inner loop of a given move is rotate -> move/update -> unrotate -> paint screen
     // while any moves are valid
@@ -207,9 +206,9 @@ class tile_board {
     }
     // enumerate empty space and randomly select n for filling
     add_tile(n=1) {
-        let opens = ld.flattenDepth(this.cols,1)
+        let opens = flattenDepth(this.cols,1)
             .map((elem,i) => elem.val === 0 ? i : null);
-        let openix = ld.remove(opens,function(e){return e != null});
+        let openix = remove(opens,function(e){return e != null});
         n = Math.min(n,openix.length);
         if(n <= 0) return [];
         let add_ix = sample(openix,n,false);
@@ -232,8 +231,8 @@ class tile_board {
             let vals = this.cols.map(
                 a => a[j].val.toString().padStart(4,' ')
             );
-            let valStr = ld.join(vals,' ').replace(zre,zch);
-            console.log(lpad + '|' + valStr + ' |');
+            let valStr = join(vals,' ').replace(zre,zch);
+            console.log(`${lpad}|${valStr} |`);
         }
         console.log(`${lpad}${'-'.repeat(bw)}\n`);
         console.log("Moves: [h] -> left | [j] -> down | [k] -> up | [l] -> right");
@@ -253,7 +252,7 @@ class tile_board {
 // for running in the Node repl
 var _2048 = function(W=4,H=4) {
     let tc = tile_column.make_col(W*H,false);
-    const board = new tile_board(ld.chunk(tc.tiles,H));
+    const board = new tile_board(chunk(tc.tiles,H));
     board.add_tile(1);
     board.print();
     process.stdin.setRawMode(true);

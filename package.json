@@ -1,0 +1,19 @@
+{
+    "name": "2048",
+    "version": "0.1.1",
+    "description": "A tiles game",
+    "scripts": {
+        "build": "webpack"
+    },
+    "devDependencies": {
+        "webpack": "^5.44.0",
+        "webpack-cli": "^4.7.2"
+    },
+    "dependencies": {
+        "@babel/register": "^7.14.5",
+        "babel-core": "^6.26.3",
+        "lodash": "^4.17.21"
+    },
+    "type": "module",
+    "license": "MIT"
+}

@@ -171,7 +171,7 @@ function chunk(arr, n, fill_val = null) {
 }
 
 function age_tile(tid, cc) {
-    d3.select("#" + tid).attr('class', 'fg_tile').attr('fill', cc[0]).attr('stroke', cc[1]);
+    d3.select(`#${tid}`).attr('class', 'fg_tile').attr('fill', cc[0]).attr('stroke', cc[1]);
     d3.select("#new_tile_num").attr('fill', cc[2]).attr('id', '');
     busy = false;
 }
@@ -179,7 +179,7 @@ function age_tile(tid, cc) {
 class tboard {
     constructor(width, height) {
         [this.bgW, this.bgH] = [width, height];
-        let bb = Math.max(width, height);
+        const bb = Math.max(width, height);
         [this.scoreW, this.scoreH, this.sep] = [0.4 * bb, 0.17 * bb, 0.05 * bb];
         [this.canvasW, this.canvasH] = [this.bgW + 2 * this.sep, this.bgH + this.scoreH + 3 * this.sep];
         this.score = 0;
