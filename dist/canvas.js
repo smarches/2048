@@ -32,72 +32,20 @@
 // [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
 import {theme_colors, themes} from './themes.js';
+import {brighten_color, chunk, id, rm_class, runif, scale_rect, sleep} from './utils.js';
 
-const get_theme = function () {
-    return id('theme1').checked ? themes['green/purple'] : themes['tan/maroon'];
-}
+const get_theme = () => id('theme1').checked ? themes['green/purple'] : themes['tan/maroon'];
 
-const [tile_board, tile_col] = [wpUtils.tile_board, wpUtils.tile_column];
-// d3.select("body").style("background-color", '#927736');
-// hmm, how to insert a first-child not a last-child? both insert and append do same thing here
-// d3.select('body').insert('h1').text('hello there!');
-
-function id(name) {
-    return document.getElementById(name);
-}
-
-function rm_class(cls) {
-    Array.from(document.getElementsByClassName(cls)).forEach(e => e.remove());
-}
-
-function setAttributes(element, attributes) {
-    Object.keys(attributes).forEach(function (name) {
-        element.setAttribute(name, attributes[name]);
-    })
-}
-
-// fill in ticks - note that browsers don't currently support this (July 2019) but will someday!
-const [min_board_size, max_board_size] = [2, 20];
-for (let i = min_board_size; i <= max_board_size; i += 2) {
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    if ([2, 4, 8, 12, 16, 20].includes(i)) opt.label = String(i);
-    id('dticks').appendChild(opt);
-}
-
-function scale_rect(x, y, boundX, boundY) {
-    if (x < y) boundX *= x / y;
-    if (y < x) boundY *= y / x;
-    x *= boundX / x;
-    y *= boundY / y;
-    return [x, y];
-}
-
-// input must be hexadecimal number
-function brighten_color(c, amount = 0.5) {
-    amount = Math.min(Math.max(amount, -1), 1);
-    const pole = amount < 0 ? 0 : 255;
-    amount = Math.abs(amount);
-    let [r, g, b] = [c.slice(1, 3), c.slice(3, 5), c.slice(5)].map(
-        function (e) {
-            let v = Math.trunc(amount * pole + (1 - amount) * parseInt(e, 16));
-            return (v < 16 ? '0' : '') + v.toString(16);
-        }
-    );
-    return '#' + r + g + b;
-}
-
-function runif(n, a = 0, b = 1) {
-    if (a > b) [a, b] = [b, a];
-    if (a === b) return Array(n).fill(a);
-    const diff = b - a;
-    return Array(n).fill(0).map(_ => diff * Math.random() + a);
-}
-
-function rexp(n, lambda) {
-    if (isNaN(lambda) || lambda <= 0) throw `rexp: invalid lambda parameter (${lambda})`;
-    if (isNaN(n) || n < 1) throw `rexp: invalid n parameter (${n})`;
-    return Array.apply(0, Array(n)).map(e => -Math.log(Math.random()) / lambda);
+// fill in ticks - note that browsers don't currently support this (July 2019) (still not supported July 2021!) but will someday!
+function setupRangeSliders() {
+    const [min_board_size, max_board_size] = [2, 20];
+    for (let i = min_board_size; i <= max_board_size; i += 2) {
+        const opt = document.createElement('option');
+        const dlist = id('dticks');
+        opt.value = String(i);
+        if ([2, 4, 8, 12, 16, 20].includes(i)) opt.label = String(i);
+        dlist.appendChild(opt);
+    }
 }
 
 // generate random X, Y, sizes, and opacities for bg deco
@@ -110,19 +58,6 @@ function bg_deco(W, H, n, scale) {
         'rot': runif(n, 0, 360)
     };
     return rv;
-}
-
-// just import lodash?
-function chunk(arr, n, fill_val = null) {
-    const n_res = Math.ceil(arr.length / n);
-    const res = [];
-    for (let i = 0; i < n_res; i++) res.push([]);
-    arr.forEach((a, i) => res[Math.floor(i / n)].push(a));
-    const rem = arr.length % n;
-    if (fill_val !== null && rem) {
-        res[n_res - 1] = res[n_res - 1].concat(new Array(rem).fill(fill_val));
-    }
-    return res;
 }
 
 function age_tile(tid, cc) {
@@ -269,40 +204,13 @@ class tboard {
     }
 }
 
-// default board
-var board_dim = 500;
-if (window.innerHeight < board_dim) {
-    board_dim = Math.max(200, window.innerHeight);
-}
+const [tile_board, tile_col] = [wpUtils.tile_board, wpUtils.tile_column];
+// default board (set up a window.onresize event callback?)
+const board_dim = Math.min(Math.max(200,window.innerHeight),500);
+
 const the_board = new tboard(board_dim, board_dim); // the SVG elements
-d3.select("#board").style('min-height', `${board_dim + 20}px`);
 var game_board; // tracks tiles' state and score
 var [done, busy] = [true, false];
-
-// controls/options for game (UI is exclusive to front-end)
-// link with sliders
-id('board_size_H').oninput = function () {
-    id('height_slider').innerHTML = `Height (${this.value})`;
-};
-id('board_size_W').oninput = function () {
-    id('width_slider').innerHTML = `Width (${this.value})`;
-};
-// need to trigger an event once so the range sliders are properly reset on page reload
-var slidy_event = new Event('input', { 'bubbles': true, 'cancelable': true });
-id('board_size_H').dispatchEvent(slidy_event);
-id('board_size_W').dispatchEvent(slidy_event);
-// likewise ensure default position of checkbox
-id('theme1').checked = false;
-
-id('theme1').onchange = function () {
-    if (!busy && the_board.in_play) {
-        busy = true;
-        let [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
-        the_board.draw_bg(W, H);
-        the_board.draw_tiles(game_board);
-        busy = false;
-    }
-}
 
 // testing plotting:
 const rand_plot = function () {
@@ -319,7 +227,7 @@ const rand_plot = function () {
 
 const setup = function () {
     const [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
-    let ecol = tile_col.val_col(Array(W * H).fill(0));
+    const ecol = tile_col.val_col(Array(W * H).fill(0));
     game_board = new tile_board(chunk(ecol.tiles, H));
     the_board.draw_bg(W, H);
     the_board.draw_tiles(game_board);
@@ -329,21 +237,7 @@ const setup = function () {
     busy = false; done = false;
 }
 
-id('start_game').onclick = setup;
-
-// consider what setTimeout actually does?
-// it takes a callback func and a time after which to call it
-// similarly the Promise() constructor takes a function w/ two args,
-// resolve and reject. So one way to write the callback function is
-// function(resolve,reject){/* call resolve and/or reject @ some point */}
-// or use .then(): afunc().then(resolveFunc,rejectFunc), where `afunc` returns a Promise object.
-// though in the latter case it's less obvious where the await keyword comes in.
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function lose() {
-    // alert("You lost!");
     the_board.draw_overlay();
     the_board.in_play = false;
 }
@@ -369,3 +263,33 @@ document.addEventListener(
             busy = false;
         }
     });
+
+window.addEventListener('load',setupRangeSliders);
+window.addEventListener('load',function(){
+    d3.select("#board").style('min-height', `${board_dim + 20}px`);
+    // controls/options for game (UI is exclusive to front-end)
+    id('start_game').addEventListener('click',setup);
+    // link with sliders
+    id('board_size_H').oninput = function () {
+        id('height_slider').innerHTML = `Height (${this.value})`;
+    };
+    id('board_size_W').oninput = function () {
+        id('width_slider').innerHTML = `Width (${this.value})`;
+    };
+    // need to trigger an event once so the range sliders are properly reset on page reload
+    const slidy_event = new Event('input', { 'bubbles': true, 'cancelable': true });
+    id('board_size_H').dispatchEvent(slidy_event);
+    id('board_size_W').dispatchEvent(slidy_event);
+    // likewise ensure default position of checkbox
+    id('theme1').checked = false;
+
+    id('theme1').onchange = function () {
+        if (!busy && the_board.in_play) {
+            busy = true;
+            let [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
+            the_board.draw_bg(W, H);
+            the_board.draw_tiles(game_board);
+            busy = false;
+        }
+    }
+});
