@@ -1,10 +1,5 @@
-// reduce webpack size
-import {range} from 'lodash/range.js';
-import {flattenDepth} from 'lodash/flattenDepth.js';
-import {toPairs} from 'lodash/toPairs.js';
-import remove from 'lodash/remove.js';
-import join from 'lodash/join.js';
-import chunk from 'lodash/chunk.js';
+// tree-shaking should minimize imports
+import {chunk, flattenDepth, join, range, remove, toPairs} from 'lodash';
 
 function nullish(x){
     return typeof(x) === 'undefined' || x === null || isNaN(x);

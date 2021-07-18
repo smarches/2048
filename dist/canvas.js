@@ -31,55 +31,10 @@
 // [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
 // [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
-// tan -> maroon theme
-const theme_1 = {
-    'name': 'tan/maroon',
-    'fills': ['#F3DD84', '#FFFFCC', '#FFF0A8', '#FEE186', '#FEC965', '#FDAA48', '#FD8D3C', '#FC5A2D', '#EC2E21', '#D30F20', '#B00026', '#800026'],
-    'strokes': ['#5E3B07', '#BBBB54', '#C0AE36', '#C1A309', '#C19107', '#C07A01', '#C16404', '#C03D10', '#AF261E', '#A00A16', '#88001B', '#65001C'],
-    'txt_col': ['#6F614C', '#7A7A05', '#7E7104', '#7E6901', '#7F5E01', '#7F4F00', '#814100', '#842500', '#7F0900', '#FF9295', '#FF8089', '#E67686'],
-    'bg_fill': '#F3DD84',  // bg tiles
-    'bg_line': '#5E3B07',
-    'bg_text': '#6F614C',
-    'new_fill': '#EEAF66', // new tiles
-    'new_line': '#7C5416',
-    'new_text': '#901F28',
-    'body_bg': '#927736',  // <body> of page
-    'box_bg': '#96a696',   // box containing board + score
-    'score_bg': '#443322', // score box
-    'score_text': '#ffebcd'
-};
+import {theme_colors, themes} from './themes.js';
 
-// green -> purple theme
-const theme_2 = {
-    'name': 'green/purple',
-    'fills': ['#8d9e91', '#9FDA3A', '#71CF57', '#4AC16D', '#2DB27D', '#1FA187', '#21908C', '#277F8E', '#2E6E8E', '#365C8D', '#3F4889', '#46337E'],
-    'strokes': ['#5d2489', '#71A015', '#4D9836', '#418C55', '#27835C', '#097763', '#006C68', '#095F6C', '#1C536D', '#2A4569', '#303767', '#362568'],
-    'txt_col': ['#6F614C', '#486903', '#246600', '#145F2D', '#04583A', '#015041', '#034846', '#01414A', '#85B6D7', '#8DAADB', '#979DDB', '#9E91D3'],
-    'bg_fill': '#8d9e91',
-    'bg_line': '#5d2489',
-    'bg_text': '#6F614C',
-    'new_fill': '#B7ADDA',
-    'new_line': '#7769A4',
-    'new_text': '#448578',
-    'body_bg': '#4E2D5C',
-    'box_bg': '#1a4223',
-    'score_bg': '#441757',
-    'score_text': '#F7F9C7'
-};
-
-
-const ix_map = Array.apply(0, Array(11)).map((_, i) => Math.pow(2, i + 1));
-const ix_rev = {};
-ix_map.forEach((e, i) => ix_rev[e] = i + 1);
-
-/* theme colors needed for drawing tile */
-function theme_colors(theme, n) {
-    let ix = ix_rev[n] || 0;
-    return [theme.fills[ix], theme.strokes[ix], theme.txt_col[ix]];
-}
-
-get_theme = function () {
-    return id('theme1').checked ? theme_2 : theme_1;
+const get_theme = function () {
+    return id('theme1').checked ? themes['green/purple'] : themes['tan/maroon'];
 }
 
 const [tile_board, tile_col] = [wpUtils.tile_board, wpUtils.tile_column];
@@ -104,10 +59,10 @@ function setAttributes(element, attributes) {
 // fill in ticks - note that browsers don't currently support this (July 2019) but will someday!
 const [min_board_size, max_board_size] = [2, 20];
 for (let i = min_board_size; i <= max_board_size; i += 2) {
-    ot = document.createElement('option');
-    ot.value = String(i);
-    if ([2, 4, 8, 12, 16, 20].includes(i)) ot.label = String(i);
-    id('dticks').appendChild(ot);
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    if ([2, 4, 8, 12, 16, 20].includes(i)) opt.label = String(i);
+    id('dticks').appendChild(opt);
 }
 
 function scale_rect(x, y, boundX, boundY) {
@@ -136,7 +91,7 @@ function runif(n, a = 0, b = 1) {
     if (a > b) [a, b] = [b, a];
     if (a === b) return Array(n).fill(a);
     const diff = b - a;
-    return Array(n).fill(0).map(e => diff * Math.random() + a);
+    return Array(n).fill(0).map(_ => diff * Math.random() + a);
 }
 
 function rexp(n, lambda) {
@@ -147,7 +102,7 @@ function rexp(n, lambda) {
 
 // generate random X, Y, sizes, and opacities for bg deco
 function bg_deco(W, H, n, scale) {
-    rv = {
+    const rv = {
         'x': runif(n, 0.05 * W, 0.95 * W),
         'y': runif(n, 0.05 * H, 0.95 * H),
         'scale': runif(n, 0, scale * W),
@@ -159,11 +114,11 @@ function bg_deco(W, H, n, scale) {
 
 // just import lodash?
 function chunk(arr, n, fill_val = null) {
-    n_res = Math.ceil(arr.length / n);
-    res = [];
+    const n_res = Math.ceil(arr.length / n);
+    const res = [];
     for (let i = 0; i < n_res; i++) res.push([]);
-    arr.map((a, i) => res[Math.floor(i / n)].push(a));
-    let rem = arr.length % n;
+    arr.forEach((a, i) => res[Math.floor(i / n)].push(a));
+    const rem = arr.length % n;
     if (fill_val !== null && rem) {
         res[n_res - 1] = res[n_res - 1].concat(new Array(rem).fill(fill_val));
     }
@@ -200,9 +155,9 @@ class tboard {
         d3.select("#score_box").attr('fill', cth.score_bg);
         const cv = d3.select('#game_box');
         const [x0, y0, xW, yW] = this.scoreXY;
-        const n = val === null ? this.score : val;
+        const n = val || this.score;
         const delta = Math.max(0, n - this.score);
-        console.log(`old score = ${this.score} and delta = ${delta}`);
+        // console.info(`old score = ${this.score} and delta = ${delta}`);
         let n_str = String(n).split('');
         n_str.map((e, i) => {
             cv.append('text').attr('x', 1.05 * x0 + 0.16 * xW * i).attr('y', y0 + 0.8 * yW).attr('class', 'score_font').attr('fill', cth.score_text).html(e);
@@ -279,7 +234,7 @@ class tboard {
             const xoff = ix * tw + txy[0] + tgap;
             col.forEach((elem, i) => {
                 let [n, yoff, tile_id] = [elem.val, txy[1] + tw * i + tgap, `tile_${ix}_${i}`];
-                let [tfill, tstroke, txtc] = theme_colors(curr_theme, n);
+                let [tfill, tstroke, txtc] = theme_colors(curr_theme.name, n);
                 cv.append('rect').attr('x', xoff).attr('y', yoff).attr('width', tdim).attr('height', tdim).attr('id', tile_id)
                     .attr('rx', trad).attr('ry', trad).attr('fill', tfill).attr('stroke', tstroke).attr('class', n > 0 ? 'fg_tile' : 'bg_tile');
                 if (n > 0) {
@@ -295,7 +250,7 @@ class tboard {
         const tadj = tw * 0.5 - tgap;
         const [txy, tile_id] = [this.boardXY, `tile_${i}_${j}`]; // top left corner of board
         let curr_theme = get_theme();
-        let [tfill, tstroke, txtc] = theme_colors(curr_theme, tile.val);
+        let [tfill, tstroke, txtc] = theme_colors(curr_theme.name, tile.val);
         id(tile_id).remove(); // keep unique (though text is left extra...)
         const [xoff, yoff] = [i * tw + txy[0] + tgap, j * tw + txy[1] + tgap];
         var cv = d3.select('#game_box');
@@ -320,7 +275,7 @@ if (window.innerHeight < board_dim) {
     board_dim = Math.max(200, window.innerHeight);
 }
 const the_board = new tboard(board_dim, board_dim); // the SVG elements
-d3.select("#board").style('min-height', String(board_dim + 20) + 'px');
+d3.select("#board").style('min-height', `${board_dim + 20}px`);
 var game_board; // tracks tiles' state and score
 var [done, busy] = [true, false];
 
@@ -350,7 +305,7 @@ id('theme1').onchange = function () {
 }
 
 // testing plotting:
-rand_plot = function () {
+const rand_plot = function () {
     let [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
     //var tvals = [0,2,4,512, 0,-1,4,8, 0,0,2,2, 4,16,32,64];
     let tvals = Array.apply(0, Array(W * H)).map(_ => {
@@ -362,8 +317,8 @@ rand_plot = function () {
     draw_tiles(tboard);
 }
 
-setup = function () {
-    let [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
+const setup = function () {
+    const [W, H] = [id("board_size_W").valueAsNumber, id("board_size_H").valueAsNumber];
     let ecol = tile_col.val_col(Array(W * H).fill(0));
     game_board = new tile_board(chunk(ecol.tiles, H));
     the_board.draw_bg(W, H);
@@ -374,7 +329,7 @@ setup = function () {
     busy = false; done = false;
 }
 
-id('start_game').onclick = function () { setup() };
+id('start_game').onclick = setup;
 
 // consider what setTimeout actually does?
 // it takes a callback func and a time after which to call it
@@ -393,37 +348,24 @@ function lose() {
     the_board.in_play = false;
 }
 
-document.onkeydown = async function (e) {
-    if (busy || done) return;
-    busy = true;
-    var dir = null;
-    switch (e.keyCode) {
-        case 37:
-            dir = 'left';
-            break;
-        case 38:
-            dir = 'up';
-            break;
-        case 39:
-            dir = 'right';
-            break;
-        case 40:
-            dir = 'down';
-            break;
-        default:
-            break;
-    }
-    mv = dir !== null ? game_board.move_tiles(dir) : [];
-    if (game_board.danzo) {
-        done = true;
-        lose();
-    }
-    if (mv.length > 1) {
-        the_board.draw_tiles(game_board);
-        await sleep(200);
-        let tloc = game_board.add_tile()[0]; // returns indices of added tiles
-        the_board.draw_tile(game_board.cols[tloc[0]][tloc[1]], tloc[0], tloc[1]);
-    } else {
-        busy = false;
-    }
-}
+document.addEventListener(
+    'keyup', 
+    async function (e) {
+        if (busy || done) return;
+        busy = true;
+        const keymap = {'ArrowLeft': 'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down'};
+        const dir = keymap[e.key];
+        const mv = dir ? game_board.move_tiles(dir) : [];
+        if (game_board.danzo) {
+            done = true;
+            lose();
+        }
+        if (mv.length > 1) {
+            the_board.draw_tiles(game_board);
+            await sleep(200);
+            let tloc = game_board.add_tile()[0]; // returns indices of added tiles
+            the_board.draw_tile(game_board.cols[tloc[0]][tloc[1]], tloc[0], tloc[1]);
+        } else {
+            busy = false;
+        }
+    });
