@@ -1,101 +1,54 @@
-// tree-shaking should minimize imports
-import {chunk, flattenDepth, join, range, remove, toPairs} from 'lodash';
+import { flattenDepth, join, remove, toPairs } from 'NodeModules/lodash';
+import { rotate_array } from "./arrays";
+import { sample } from "./random";
 
-function nullish(x){
-    return typeof(x) === 'undefined' || x === null || isNaN(x);
-}
-
-function is_falsy(x){
-    return nullish(x) || x === 0 || x === false || x === 'false';
-}
-
-function is_truthy(x){
-    return x === 1 || x === true || x === 'true';
-}
-
-// given an input (column-oriented) rectangular array (N columns, each of length M),
-// 'rotate' the array by the number of times (each 'time' is a 90 degree turn)
-// input array must be rectangular for this to be sensible
-function rotate_array(AA,times = 0,dir = 'clockwise') {
-    times %= 4; // equivalence group
-    if(times < 0) times += 4;
-    if(dir === 'clockwise') dir = 4 - dir;
-    let res = [];
-    let M = AA[0].length;
-    switch(times) {
-        case 1:
-            for(let i=0;i<M;i++){
-                res.push( AA.map(A => A[i]).reverse() );
-            }
-            break;
-        case 2: // need slice() to get a copy (otherwise modifies input AA)
-            res = AA.map( a => a.slice().reverse() ).reverse();
-            break;
-        case 3:
-            for(let i=M-1;i>=0;i--){
-                res.push( AA.map( A => A[i]) );
-            }
-            break;
-        default:
-            res = AA;
-            break;
-    }
-    return res;
-}
-
-function sample(elems,n,replace=false) {
-    let res = [];
-    if(typeof elems === 'number'){
-        if(is_falsy(elems) || elems < 0) return res;
-        elems = range(1,Math.floor(elems+1));
-    }
-    let L = elems.length;
-    if(n != Math.floor(n)) return res;
-    if(replace) {
-        for(let i=0;i<n;i++) {
-            res.push(elems[Math.floor(L*Math.random())]);
-        }
-    } else {
-        if(n >= L) return elems;
-        const ix = range(L);
-        for(let i=0;i<n;i++){
-            let ii = Math.floor(L--*Math.random());
-            res.push(elems[ix[ii]]);
-            [ix[ii],ix[L]] = [ix[L],ix[ii]];
-        }
-    }
-    return res;
-}
-
-const ix_map = Array.apply(0,Array(11)).map( (_,i) => Math.pow(2,i+1));
-const ix_rev = {};
-ix_map.forEach((e,i) => ix_rev[e] = i+1);
+// TODO: export this?
+const enum Direction{
+    Down,
+    Left,
+    Right,
+    Up
+};
 
 class tile {
-    constructor(n) {
+    _val:number;
+    ix_rev:Object;
+    constructor(n:number) {
+        const ix_map = Array.apply(0,Array(11)).map( (_,i) => Math.pow(2,i+1));
+        const ix_rev = {};
+        ix_map.forEach((e,i) => this.ix_rev[e] = i+1);
         this.update(n);
     }
     get val() { return this._val; }
-    update(n) {
-        let ix = ix_rev[n] || 0;
+    update(n:number): void {
+        let ix = this.ix_rev[n] || 0;
         this._val = ix === 0 ? 0 : n;
     }
 }
 
+interface tile_status {
+    'tiles':Array<tile>,
+    'changed':boolean,
+    'score':number
+}
+
 class tile_column {
-    constructor(tile_array) {
+    tiles: Array<tile>;
+    _len:number;
+    has_merged:Array<boolean>;
+    constructor(tile_array:Array<tile>) {
         this.tiles = tile_array;
         this._len = tile_array.length;
         this.has_merged = Array(this._len).fill(false);
     }
     get len() { return this._len; }
 
-    swap_tile(i,j) {
+    swap_tile(i:number,j:number):void {
         if(i >= this._len || j >= this._len || i < 0 || j < 0) return;
         [this.tiles[j],this.tiles[i]] = [this.tiles[i],this.tiles[j]];
     }
     // perform one round of moving tiles. Don't want to do all @ once for animation purposes (though that is more efficient to calculate)
-    fall() {
+    fall():boolean {
         let any_move = false;
         for(var i=this.len-1;i > 0; i--) {
             if(!this.tiles[i].val && this.tiles[i-1].val) {
@@ -105,7 +58,7 @@ class tile_column {
         }
         return any_move;
     }
-    merge() { // note this is 'rightfold' operation not 'leftfold'
+    merge():number { // note this is 'rightfold' operation not 'leftfold'
         let score = 0;
         for(var i=this.len-1;i > 0; i--) {
             let v = this.tiles[i].val;
@@ -120,24 +73,24 @@ class tile_column {
         return score;
     }
     // single iteration of compacting, along with a flag to indicate finished or not
-    compact1() {
+    compact1():tile_status {
         let [b1,b2] = [this.fall(), this.merge()];
-        return {tiles: this.tiles, changed: b1 || b2, 'score': b2};
+        return {tiles: this.tiles, changed: b1 || b2 > 0, score: b2};
     }
     // whole process of moving column of tiles, so merge markers are reset
-    compact() {
+    compact():number {
         let [score,done] = [0,false];
         while(!done) {
             let [a,b] = [this.fall(),this.merge()];
             score += b;
-            done = a || b;
+            done = a || (b > 0);
         }
         this.has_merged = Array(this._len).fill(false);
         return score;
     }
-    static make_col(n,randomize=true) {
+    static make_col(n:number,randomize:boolean=true):tile_column {
         n = Math.floor(n);
-        if(nullish(n)) {
+        if(!Boolean(n)) {
             return null;
         }
         const res = [];
@@ -147,16 +100,22 @@ class tile_column {
         }
         return new tile_column(res);
     }
-    static val_col(vv) {
+    static val_col(vv:Array<number>):tile_column {
         return new tile_column(vv.map(v => new tile(v)));
     }
 }
 
 class tile_board {
-    constructor(tile_arr) {
+    cols: Array<tile_column>;
+    W:number;
+    H:number;
+    score:number;
+    busy:boolean;
+    end_state:Object;
+    constructor(tile_arr:Array<tile_column>) {
         this.cols = tile_arr;
         this.W = tile_arr.length;
-        this.H = tile_arr[0].length;
+        this.H = tile_arr[0].tiles.length;
         this.score = 0;
         this.busy = false;
         this.end_state = {left:false,right:false,up:false,down:false};
@@ -171,10 +130,10 @@ class tile_board {
     }
     // inner loop of a given move is rotate -> move/update -> unrotate -> paint screen
     // while any moves are valid
-    move_tiles(dir) {
-        let rot_turns = dir === 'left' ? 1 : (dir === 'right' ? 3 : (dir === 'up' ? 2 : 0));
-        let un_rot = 4 - rot_turns;
-        let tcols = rotate_array(this.cols,rot_turns);
+    move_tiles(dir:Direction) {
+        // let rot_turns = dir === Direction.Left ? 1 : (dir === 'right' ? 3 : (dir === 'up' ? 2 : 0));
+        let un_rot = 4 - dir;
+        let tcols = rotate_array(this.cols,dir);
         // build up the sequence of arrangements that resulted from initiating movement in the given direction
         let [move_array, done] = [[tcols],false];
         // init tile_column once here to manage 'merged' tags
@@ -185,7 +144,7 @@ class tile_board {
             for(let j=0;j<tcols.length;j++){
                 let tc = tcs[j].compact1();
                 tcols[j] = tc.tiles;
-                n_done += 1 - tc.changed;
+                n_done += 1 - Number(tc.changed);
                 this.score += tc.score;
             }
             done = n_done === n_cols;
@@ -218,12 +177,12 @@ class tile_board {
         return res;
     }
     // node only
-    print() {
+    print():void {
         const [bw,zch,zre,lpad] = [5*this.W + 2,'.',/0/g,'   '];
         console.log(('Score: ' + this.score.toString().padStart(6)).padStart(bw + lpad.length));
         console.log(`\n${lpad}${'-'.repeat(bw)}`);
-        for(let j=0;j<this.H;j++) {
-            let vals = this.cols.map(
+        for(let j=0; j < this.H; j++) {
+            const vals = this.cols.map(
                 a => a[j].val.toString().padStart(4,' ')
             );
             let valStr = join(vals,' ').replace(zre,zch);
@@ -233,7 +192,7 @@ class tile_board {
         console.log("Moves: [h] -> left | [j] -> down | [k] -> up | [l] -> right");
     }
     // for console (since adding new tile needs timing management in browser)
-    runmv(dir) {
+    runmv(dir:Direction) {
         if(this.busy) return false;
         this.busy = true;
         let ts = this.move_tiles(dir);
@@ -244,57 +203,5 @@ class tile_board {
     }
 }
 
-// for running in the Node repl
-var _2048 = function(W=4,H=4) {
-    let tc = tile_column.make_col(W*H,false);
-    const board = new tile_board(chunk(tc.tiles,H));
-    board.add_tile(1);
-    board.print();
-    process.stdin.setRawMode(true);
-    process.stdin.on('keypress',function(letter,key) {
-        var dir = '';
-        switch(key.name) {
-            case 'h':
-                dir = 'left';
-                break;
-            case 'j':
-                dir = 'down';
-                break;
-            case 'k':
-                dir = 'up';
-                break;
-            case 'l':
-                dir = 'right';
-                break;
-            default:
-                break;
-        }
-        if(dir.length){
-            board.runmv(dir);
-            console.clear();
-            board.print();
-            if(board.danzo) {
-                console.log("You lost!");
-                process.exit();
-            }
-        }
-    });
-}
 
-// /*
-if(typeof window === 'undefined') {
-    // generic helpers
-    exports.turn = rotate_array;
-    exports.sample = sample;
-    // class objects
-    exports.tile_board = tile_board;
-    exports.tile = tile;
-    exports.tile_col = tile_column;
-    exports._2048 = _2048;
-}
-// */
-
-// make the following importable by other .js files that are NOT inside of the giant webpack blob
-// note that exports can only be put @ the top level
-// but can be imported by Node, browser, etc.
-export {sample, tile_board, tile_column};
+export {Direction, tile, tile_column, tile_board};
