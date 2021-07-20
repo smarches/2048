@@ -1,4 +1,4 @@
-import { flattenDepth, join, remove, toPairs } from 'NodeModules/lodash';
+import { flattenDepth, join, remove, toPairs } from 'lodash';
 import { rotate_array } from "./arrays";
 import { sample } from "./random";
 

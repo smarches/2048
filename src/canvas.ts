@@ -31,8 +31,13 @@
 // [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
 // [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
+import {select as D3select} from "d3-selection";
+
 import {theme_colors, themes} from './themes.js';
-import {brighten_color, chunk, id, inputValueAsNumber, rm_class, runif, scale_rect, sleep} from './utils.js';
+import {brighten_color, id, inputValueAsNumber, rm_class, scale_rect, sleep} from './utils';
+import {runif} from './random';
+import {chunk} from './arrays';
+import {tile_board, tile_column, tile} from './tiles';
 
 const get_theme = () => (id('theme1') as HTMLInputElement).checked ? themes['green/purple'] : themes['tan/maroon'];
 
@@ -48,8 +53,17 @@ function setupRangeSliders(): void {
     }
 }
 
+// one-off interface to satisfy the compiler
+interface bg_decorator {
+    x: Array<number>;
+    y: Array<number>;
+    scale: Array<number>;
+    alpha?: Array<number>;
+    rot?:Array<number>;
+}
+
 // generate random X, Y, sizes, and opacities for bg deco
-function bg_deco(W:number, H:number, n:number, scale:number): Object {
+function bg_deco(W:number, H:number, n:number, scale:number): bg_decorator {
     const rv = {
         'x': runif(n, 0.05 * W, 0.95 * W),
         'y': runif(n, 0.05 * H, 0.95 * H),
@@ -60,9 +74,12 @@ function bg_deco(W:number, H:number, n:number, scale:number): Object {
     return rv;
 }
 
-function age_tile(tid: string, cc: Array<string>) {
-    d3.select(`#${tid}`).attr('class', 'fg_tile').attr('fill', cc[0]).attr('stroke', cc[1]);
-    d3.select("#new_tile_num").attr('fill', cc[2]).attr('id', '');
+function age_tile(tile_id: string, cc: Array<string>) {
+    const tile = id(tile_id);
+    tile.classList.add('fg_tile');
+    tile.setAttribute('fill',cc[0]);
+    tile.setAttribute('stroke',cc[1]);
+    D3select("#new_tile_num").attr('fill', cc[2]).attr('id', '');
     busy = false;
 }
 
@@ -78,7 +95,7 @@ class tboard {
     dim: Array<number>;
     in_play: Boolean;
     XYoffset: Array<number>;
-    tile_size:string;
+    tile_size:number;
     font_size:string;
     board_dim:Array<number>;
 
@@ -102,12 +119,13 @@ class tboard {
     update_score(val = null) {
         rm_class('score_font');
         const cth = get_theme();
-        d3.select("#score_box").attr('fill', cth.score_bg);
-        const cv = d3.select('#game_box');
+        const box = id("score_box");
+        box.setAttribute('fill', cth.score_bg);
         const [x0, y0, xW, yW] = this.scoreXY;
         const n = val || this.score;
         const delta = Math.max(0, n - this.score);
         // console.info(`old score = ${this.score} and delta = ${delta}`);
+        const cv = D3select('#game_box');
         let n_str = String(n).split('');
         n_str.map((e, i) => {
             cv.append('text').attr('x', 1.05 * x0 + 0.16 * xW * i).attr('y', y0 + 0.8 * yW).attr('class', 'score_font').attr('fill', cth.score_text).html(e);
@@ -115,7 +133,7 @@ class tboard {
         const base_stroke = brighten_color(cth.score_bg, 0.2);
         if (delta > 0) { // pulse
             let temp_color = brighten_color(base_stroke, 1 - 2 / Math.sqrt(delta));
-            d3.select("#score_box").transition().attr('stroke', temp_color).attr('stroke-width', "0.25rem").duration(333)
+            D3select("#score_box").transition().attr('stroke', temp_color).attr('stroke-width', "0.25rem").duration(333)
                 .transition().attr('stroke', base_stroke).attr('stroke-width', '0.2rem').duration(1000);
         }
         this.score = val;
@@ -125,11 +143,11 @@ class tboard {
         const boffH = 2 * this.sep + this.scoreH + (this.bgH - boardH);
         const [gapV, gapH] = [boardW / W, boardH / H]; // 'latitudes' and 'longitudes'
         const c_theme = get_theme();
-        d3.select("body").style("background-color", c_theme.body_bg);
+        D3select("body").style("background-color", c_theme.body_bg);
         const [bg_stroke, bg_fill] = [c_theme.bg_line, c_theme.bg_fill]; // coordinate bg with tile colors
-        d3.select("#board").html(''); // clear existing
+        D3select("#board").html(''); // clear existing
         // basic outline
-        var canvas = d3.select('#board').append('svg').attr('width', this.canvasW).attr('height', this.canvasH)
+        var canvas = D3select('#board').append('svg').attr('width', this.canvasW).attr('height', this.canvasH)
             .attr('class', 'gamebox').attr('id', 'game_box').style('background-color', c_theme.box_bg);
         const [x0, y0, xW, yW] = this.scoreXY;
         canvas.append('rect').attr('x', x0).attr('y', y0)
@@ -163,27 +181,27 @@ class tboard {
         }
         this.dim = [W, H];
         this.XYoffset = [this.sep, boffH];
-        this.tile_size = (this.bgW / Math.max(W, H)).toFixed(3);
+        this.tile_size = (this.bgW / Math.max(W, H));
         const fontAdj = (5 - Math.log2(Math.max(W, H))).toFixed(3);
         this.font_size = fontAdj + 'rem'; // need to add pixel size scaling also
         this.board_dim = [boardW, boardH];
         this.in_play = true;
     }
     // drawing all tiles @ once
-    draw_tiles(tile_arr:Array<any>): void {
+    draw_tiles(tile_arr:tile_board): void {
         if (this.dim[0] != tile_arr.w || this.dim[1] != tile_arr.h) {
             alert(`Wrong # of tiles! tile_arr has ${tile_arr.w} by ${tile_arr.h} and the_board is ${this.dim[0]} x ${this.dim[1]}`);
             return;
         };
         const [tw, tgap] = [this.tile_size, this.tile_size * 0.1];
         const [tadj, txy, trad, tdim] = [tw * 0.5 - tgap, this.boardXY, 0.125 * tw, (tw - 2 * tgap).toFixed(3)];
-        const cv = d3.select('#game_box');
+        const cv = D3select('#game_box');
         const fs = this.font_size;
         let curr_theme = get_theme();
         ['tile_num', 'fg_tile', 'bg_tile', 'new_tile'].forEach(e => rm_class(e));
         tile_arr.cols.map(function (col, ix) {
             const xoff = ix * tw + txy[0] + tgap;
-            col.forEach((elem, i) => {
+            col.tiles.forEach((elem, i) => {
                 let [n, yoff, tile_id] = [elem.val, txy[1] + tw * i + tgap, `tile_${ix}_${i}`];
                 let [tfill, tstroke, txtc] = theme_colors(curr_theme.name, n);
                 cv.append('rect').attr('x', xoff).attr('y', yoff).attr('width', tdim).attr('height', tdim).attr('id', tile_id)
@@ -196,7 +214,7 @@ class tboard {
         this.update_score(tile_arr.score);
     }
     // when one tile is added after each turn, there's no need to re-draw the entire board
-    draw_tile(tile, i, j) {
+    draw_tile(tile:tile, i:number, j:number) {
         const [tw, tgap, trad] = [this.tile_size, 0.1 * this.tile_size, 0.125 * this.tile_size];
         const tadj = tw * 0.5 - tgap;
         const [txy, tile_id] = [this.boardXY, `tile_${i}_${j}`]; // top left corner of board
@@ -204,7 +222,7 @@ class tboard {
         let [tfill, tstroke, txtc] = theme_colors(curr_theme.name, tile.val);
         id(tile_id).remove(); // keep unique (though text is left extra...)
         const [xoff, yoff] = [i * tw + txy[0] + tgap, j * tw + txy[1] + tgap];
-        var cv = d3.select('#game_box');
+        var cv = D3select('#game_box');
         cv.append('rect').attr('x', xoff).attr('y', yoff).attr('id', tile_id)
             .attr('width', tw - 2 * tgap).attr('height', tw - 2 * tgap)
             .attr('rx', trad).attr('ry', trad).attr('class', 'new_tile').attr('fill', curr_theme.new_fill).attr('stroke', curr_theme.new_line);
@@ -216,11 +234,10 @@ class tboard {
     draw_overlay(col = "#dadada") {
         let [x0, y0] = this.boardXY;
         let [xw, yw] = this.board_dim;
-        d3.select("#game_box").append('rect').attr('x', x0).attr('y', y0).attr('width', xw).attr('height', yw).attr('fill', col).attr('fill-opacity', 0.33);
+        D3select("#game_box").append('rect').attr('x', x0).attr('y', y0).attr('width', xw).attr('height', yw).attr('fill', col).attr('fill-opacity', 0.33);
     }
 }
 
-const [tile_board, tile_col] = [wpUtils.tile_board, wpUtils.tile_column];
 // default board (set up a window.onresize event callback?)
 const board_dim = Math.min(Math.max(200,window.innerHeight),500);
 
@@ -236,14 +253,14 @@ const rand_plot = function () {
         let rv = Math.log2(Math.ceil(1. / Math.random()));
         return rv < 2 ? 0 : Math.floor(rv);
     });
-    var tcol = tile_col.val_col(tvals);
-    var tboard = new tile_board(chunk(tcol.tiles, H));
-    draw_tiles(tboard);
+    var tcol = tile_column.val_col(tvals);
+    var tBoard = new tile_board(chunk(tcol.tiles, H));
+    the_board.draw_tiles(tBoard);
 }
 
 const setup = function (): void {
     const [W, H] = [inputValueAsNumber("board_size_W"), inputValueAsNumber("board_size_H")];
-    const ecol = tile_col.val_col(Array(W * H).fill(0));
+    const ecol = tile_column.val_col(Array(W * H).fill(0));
     game_board = new tile_board(chunk(ecol.tiles, H));
     the_board.draw_bg(W, H);
     the_board.draw_tiles(game_board);
@@ -281,17 +298,20 @@ document.addEventListener(
     });
 
 window.addEventListener('load',setupRangeSliders);
+
 window.addEventListener('load',function(){
-    d3.select("#board").style('min-height', `${board_dim + 20}px`);
+    D3select("#board").style('min-height', `${board_dim + 20}px`);
     // controls/options for game (UI is exclusive to front-end)
     id('start_game').addEventListener('click',setup);
     // link with sliders
-    id('board_size_H').oninput = function () {
-        id('height_slider').innerHTML = `Height (${this.value})`;
-    };
-    id('board_size_W').oninput = function () {
-        id('width_slider').innerHTML = `Width (${this.value})`;
-    };
+    id('board_size_H').addEventListener('input', function (){
+        const val = (this as HTMLInputElement).value;
+        id('height_slider').innerHTML = `Height (${val})`;
+    });
+    id('board_size_W').addEventListener('input', function () {
+        const val = (this as HTMLInputElement).value;
+        id('width_slider').innerHTML = `Width (${val})`;
+    });
     // need to trigger an event once so the range sliders are properly reset on page reload
     const slidy_event = new Event('input', { 'bubbles': true, 'cancelable': true });
     id('board_size_H').dispatchEvent(slidy_event);

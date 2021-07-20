@@ -4,9 +4,11 @@ export default {
     entry: './src/2048.ts',
     resolve: {
         extensions: [".ts", ".js"],
+        // this did not appear to work
         alias: {
             NodeModules: path.resolve('./node_modules/'),
-          }
+        },
+        modules: ['node_modules']
     },
     // despite being in MODULE this pertains to 'loaders'
     module: {
