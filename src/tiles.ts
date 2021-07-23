@@ -1,4 +1,4 @@
-import { flattenDepth, join, remove, toPairs } from 'lodash';
+import { flattenDepth } from 'lodash';
 import { rotate_array } from "./arrays";
 import { sample } from "./random";
 
@@ -15,7 +15,7 @@ class tile {
     ix_rev:Object;
     constructor(n:number) {
         const ix_map = Array.apply(0,Array(11)).map( (_,i) => Math.pow(2,i+1));
-        const ix_rev = {};
+        this.ix_rev = {};
         ix_map.forEach((e,i) => this.ix_rev[e] = i+1);
         this.update(n);
     }
@@ -106,16 +106,16 @@ class tile_column {
 }
 
 class tile_board {
-    cols: Array<tile_column>;
+    cols: Array<Array<tile>>;
     W:number;
     H:number;
     score:number;
     busy:boolean;
     end_state:Object;
-    constructor(tile_arr:Array<tile_column>) {
+    constructor(tile_arr:Array<Array<tile>>) {
         this.cols = tile_arr;
         this.W = tile_arr.length;
-        this.H = tile_arr[0].tiles.length;
+        this.H = tile_arr[0].length;
         this.score = 0;
         this.busy = false;
         this.end_state = {left:false,right:false,up:false,down:false};
@@ -126,14 +126,15 @@ class tile_board {
         return flattenDepth(this.cols,1).map(e => e.val);
     }
     get danzo() { // all done?
-        return toPairs(this.end_state).reduce((a,b) => a && b[1],true);
+        return Object.entries(this.end_state).reduce((a,b) => a && b[1],true);
     }
     // inner loop of a given move is rotate -> move/update -> unrotate -> paint screen
     // while any moves are valid
     move_tiles(dir:Direction) {
-        // let rot_turns = dir === Direction.Left ? 1 : (dir === 'right' ? 3 : (dir === 'up' ? 2 : 0));
-        let un_rot = 4 - dir;
-        let tcols = rotate_array(this.cols,dir);
+        // enum values are: down -> 0, left -> 1, right -> 2, up -> 3
+        let rot_turns = dir === Direction.Left ? 1 : (dir === Direction.Right ? 3 : (dir === Direction.Up ? 2 : 0));
+        let un_rot = 4 - rot_turns;
+        let tcols = rotate_array(this.cols,rot_turns);
         // build up the sequence of arrangements that resulted from initiating movement in the given direction
         let [move_array, done] = [[tcols],false];
         // init tile_column once here to manage 'merged' tags
@@ -160,12 +161,13 @@ class tile_board {
     }
     // enumerate empty space and randomly select n for filling
     add_tile(n=1) {
-        let opens = flattenDepth(this.cols,1)
-            .map((elem,i) => elem.val === 0 ? i : null);
-        let openix = remove(opens,function(e){return e != null});
-        n = Math.min(n,openix.length);
+        const opens = flattenDepth(this.cols,1)
+            .map((elem,i) => elem.val === 0 ? i : null)
+            .filter(e => e != null);
+        // let openix = remove(opens,function(e){return e != null});
+        n = Math.min(n,opens.length);
         if(n <= 0) return [];
-        let add_ix = sample(openix,n,false);
+        let add_ix = sample(opens,n,false);
         let res = [];
         for(let j=0;j<add_ix.length;j++){
             let [col,row] = [Math.floor(add_ix[j]/this.H),add_ix[j]%this.H];
@@ -185,7 +187,7 @@ class tile_board {
             const vals = this.cols.map(
                 a => a[j].val.toString().padStart(4,' ')
             );
-            let valStr = join(vals,' ').replace(zre,zch);
+            let valStr = vals.join(' ').replace(zre,zch);
             console.log(`${lpad}|${valStr} |`);
         }
         console.log(`${lpad}${'-'.repeat(bw)}\n`);

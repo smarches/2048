@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "d3-selection": "^3.0.0",
+        "d3-transition": "^3.0.1",
         "lodash": "^4.17.21"
     },
     "type": "module",

@@ -1,7 +1,7 @@
 import path from 'path';
 
 export default {
-    entry: './src/2048.ts',
+    entry: './src/canvas.ts',
     resolve: {
         extensions: [".ts", ".js"],
         // this did not appear to work
@@ -24,5 +24,5 @@ export default {
         },
         path: path.resolve('./dist')
     },
-    mode: 'production'
+    mode: 'development'
 }

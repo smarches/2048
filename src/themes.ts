@@ -1,5 +1,5 @@
 
-const ix_map = Array(11).fill(0).map((_, i) => Math.pow(2, i + 1));
+const ix_map = [...Array(11).keys()].map(e => Math.pow(2,e+1));
 const ix_rev = Object.fromEntries(ix_map.map((e,i) => [e, i+1]));
 
 const themes = {

@@ -23,7 +23,7 @@
 // [x] disable adding new tile when nothing changes
 // [x] new tile animation with css transitions (doesn't work since classes are not enumerated manually)
 // [x] coordinate color of numbers with tile bg color
-// [ ] excise all but necessary d3 dependencies
+// [x] excise all but necessary d3 dependencies
 // [x] fancify background (random size/shading - doens't look great)
 // [x] bug when switching colors and board size sliders have been changed (need one more abstraction for draw_bg)
 // [ ] size board to fit vertical screen height
@@ -32,12 +32,13 @@
 // [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
 import {select as D3select} from "d3-selection";
+import {transition} from "d3-transition";
 
-import {theme_colors, themes} from './themes.js';
+import {theme_colors, themes} from './themes';
 import {brighten_color, id, inputValueAsNumber, rm_class, scale_rect, sleep} from './utils';
 import {runif} from './random';
 import {chunk} from './arrays';
-import {tile_board, tile_column, tile} from './tiles';
+import {tile_board, tile_column, tile, Direction} from './tiles';
 
 const get_theme = () => (id('theme1') as HTMLInputElement).checked ? themes['green/purple'] : themes['tan/maroon'];
 
@@ -132,9 +133,11 @@ class tboard {
         });
         const base_stroke = brighten_color(cth.score_bg, 0.2);
         if (delta > 0) { // pulse
-            let temp_color = brighten_color(base_stroke, 1 - 2 / Math.sqrt(delta));
-            D3select("#score_box").transition().attr('stroke', temp_color).attr('stroke-width', "0.25rem").duration(333)
-                .transition().attr('stroke', base_stroke).attr('stroke-width', '0.2rem').duration(1000);
+            const temp_color = brighten_color(base_stroke, 1 - 2 / Math.sqrt(delta));
+            const t1 = transition().duration(333);
+            const t2 = transition().duration(1000);
+            D3select("#score_box").transition(t1).attr('stroke', temp_color).attr('stroke-width', "0.25rem")
+                .transition(t2).attr('stroke', base_stroke).attr('stroke-width', '0.2rem');
         }
         this.score = val;
     }
@@ -201,7 +204,7 @@ class tboard {
         ['tile_num', 'fg_tile', 'bg_tile', 'new_tile'].forEach(e => rm_class(e));
         tile_arr.cols.map(function (col, ix) {
             const xoff = ix * tw + txy[0] + tgap;
-            col.tiles.forEach((elem, i) => {
+            col.forEach((elem, i) => {
                 let [n, yoff, tile_id] = [elem.val, txy[1] + tw * i + tgap, `tile_${ix}_${i}`];
                 let [tfill, tstroke, txtc] = theme_colors(curr_theme.name, n);
                 cv.append('rect').attr('x', xoff).attr('y', yoff).attr('width', tdim).attr('height', tdim).attr('id', tile_id)
@@ -242,7 +245,7 @@ class tboard {
 const board_dim = Math.min(Math.max(200,window.innerHeight),500);
 
 const the_board = new tboard(board_dim, board_dim); // the SVG elements
-var game_board; // tracks tiles' state and score
+var game_board: tile_board; // tracks tiles' state and score
 var [done, busy] = [true, false];
 
 // testing plotting:
@@ -280,9 +283,18 @@ document.addEventListener(
     async function (e) {
         if (busy || done) return;
         busy = true;
-        const keymap = {'ArrowLeft': 'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down'};
-        const dir = keymap[e.key];
-        const mv = dir ? game_board.move_tiles(dir) : [];
+        const keymap = {
+            'ArrowLeft':  Direction.Left,
+            'ArrowRight': Direction.Right,
+            'ArrowUp':    Direction.Up,
+            'ArrowDown':  Direction.Down
+        };
+        let mv = [];
+        if(keymap.hasOwnProperty(e.key)) {
+            const dir = keymap[e.key];
+            console.info(`Key ${e.key} was pressed, moving ${dir}.`);
+            mv = game_board.move_tiles(dir);
+        }
         if (game_board.danzo) {
             done = true;
             lose();
@@ -298,6 +310,7 @@ document.addEventListener(
     });
 
 window.addEventListener('load',setupRangeSliders);
+
 
 window.addEventListener('load',function(){
     D3select("#board").style('min-height', `${board_dim + 20}px`);
@@ -318,7 +331,7 @@ window.addEventListener('load',function(){
     id('board_size_W').dispatchEvent(slidy_event);
     // likewise ensure default position of checkbox
     (id('theme1') as HTMLInputElement).checked = false;
-
+    
     id('theme1').onchange = function () {
         if (!busy && the_board.in_play) {
             busy = true;
@@ -329,3 +342,5 @@ window.addEventListener('load',function(){
         }
     }
 });
+
+window.addEventListener('load',() => console.log("OH HI THERE!!"));

@@ -1,10 +1,12 @@
 // given an input (column-oriented) rectangular array (N columns, each of length M),
 // 'rotate' the array by the number of times (each 'time' is a 90 degree turn)
 // input array must be rectangular for this to be sensible
-function rotate_array(AA:Array<any>,times:number = 0,dir:string = 'clockwise'):Array<any> {
+type Array2d = Array<Array<any>>;
+
+function rotate_array(AA:Array2d,times:number = 0,dir:string = 'clockwise'): Array2d {
     times %= 4; // equivalence group
     if(times < 0) times += 4;
-    if(dir === 'clockwise') times = 4 - times;
+    if(dir != 'clockwise') times = 4 - times;
     let res = [];
     let M = AA[0].length;
     switch(times) {
@@ -29,7 +31,7 @@ function rotate_array(AA:Array<any>,times:number = 0,dir:string = 'clockwise'):A
 }
 
 // just import lodash?
-function chunk(arr:Array<any>, n:number, fill_val:any = null) {
+function chunk(arr:Array<any>, n:number, fill_val:any = null): Array<Array<any>> {
     const n_res = Math.ceil(arr.length / n);
     const res = [];
     for (let i = 0; i < n_res; i++) res.push([]);
