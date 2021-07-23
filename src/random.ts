@@ -1,12 +1,12 @@
 import { range } from 'lodash';
 
-function sample(elems:Array<any>|number,n:number,replace:Boolean=false):Array<any> {
+function sample<T>(elems:Array<T>|number,n:number,replace:Boolean=false):Array<T> {
     let res = [];
     if(typeof elems === 'number'){
         if(!Boolean(elems) || elems < 0) return res;
         elems = range(1,Math.floor(elems+1));
     }
-    elems = <Array<number>>elems;
+    elems = <Array<T>>elems;
     if(n != Math.floor(n)) return res;
     let L = elems.length;
     if(replace) {

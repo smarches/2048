@@ -164,10 +164,9 @@ class tile_board {
         const opens = flattenDepth(this.cols,1)
             .map((elem,i) => elem.val === 0 ? i : null)
             .filter(e => e != null);
-        // let openix = remove(opens,function(e){return e != null});
         n = Math.min(n,opens.length);
         if(n <= 0) return [];
-        let add_ix = sample(opens,n,false);
+        let add_ix = sample<number>(opens,n,false);
         let res = [];
         for(let j=0;j<add_ix.length;j++){
             let [col,row] = [Math.floor(add_ix[j]/this.H),add_ix[j]%this.H];
