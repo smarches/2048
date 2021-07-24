@@ -3,7 +3,7 @@ import { chunk } from 'lodash';
 import { sample } from './random'
 import { rotate_array } from './arrays';
 
-import { Direction, tile, tile_column, tile_board } from './tiles';
+import { Direction, Tile, tile_column, tile_board } from './tiles';
 
 // for running in the Node repl
 const _2048 = function(W=4,H=4) {
@@ -49,7 +49,7 @@ if(typeof window === 'undefined') {
     exports.sample = sample;
     // class objects
     exports.tile_board = tile_board;
-    exports.tile = tile;
+    exports.tile = Tile;
     exports.tile_col = tile_column;
     exports._2048 = _2048;
 }

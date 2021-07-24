@@ -8,7 +8,7 @@ function rotate_array<T>(AA:Array2d<T>,times:number = 0,dir:string = 'clockwise'
     if(times < 0) times += 4;
     if(dir != 'clockwise') times = 4 - times;
     let res = [];
-    let M = AA[0].length;
+    const M = AA[0].length;
     switch(times) {
         case 1:
             for(let i=0;i<M;i++){

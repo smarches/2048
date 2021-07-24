@@ -10,7 +10,7 @@ const enum Direction{
     Up
 };
 
-class tile {
+class Tile {
     _val:number;
     ix_rev:Object;
     constructor(n:number) {
@@ -27,16 +27,16 @@ class tile {
 }
 
 interface tile_status {
-    'tiles':Array<tile>,
-    'changed':boolean,
-    'score':number
+    'tiles':   Array<Tile>,
+    'changed': boolean,
+    'score':   number
 }
 
 class tile_column {
-    tiles: Array<tile>;
+    tiles: Array<Tile>;
     _len:number;
     has_merged:Array<boolean>;
-    constructor(tile_array:Array<tile>) {
+    constructor(tile_array:Array<Tile>) {
         this.tiles = tile_array;
         this._len = tile_array.length;
         this.has_merged = Array(this._len).fill(false);
@@ -96,23 +96,23 @@ class tile_column {
         const res = [];
         for(let i=0;i<n;i++) {
             let ix = randomize ? 10 - Math.floor(Math.log2(Math.ceil(2048*Math.random()))) : 0;
-            res.push(new tile(ix));
+            res.push(new Tile(ix));
         }
         return new tile_column(res);
     }
     static val_col(vv:Array<number>):tile_column {
-        return new tile_column(vv.map(v => new tile(v)));
+        return new tile_column(vv.map(v => new Tile(v)));
     }
 }
 
 class tile_board {
-    cols: Array<Array<tile>>;
+    cols: Array<Array<Tile>>;
     W:number;
     H:number;
     score:number;
     busy:boolean;
     end_state:Object;
-    constructor(tile_arr:Array<Array<tile>>) {
+    constructor(tile_arr:Array<Array<Tile>>) {
         this.cols = tile_arr;
         this.W = tile_arr.length;
         this.H = tile_arr[0].length;
@@ -172,7 +172,7 @@ class tile_board {
             let [col,row] = [Math.floor(add_ix[j]/this.H),add_ix[j]%this.H];
             let z = Math.random();
             let tval = z > 0.9 ? (z > 0.98 ? 8 : 4) : 2;
-            this.cols[col][row] = new tile(tval);
+            this.cols[col][row] = new Tile(tval);
             res.push([col,row]);
         }
         return res;
@@ -192,7 +192,7 @@ class tile_board {
         console.log(`${lpad}${'-'.repeat(bw)}\n`);
         console.log("Moves: [h] -> left | [j] -> down | [k] -> up | [l] -> right");
     }
-    // for console (since adding new tile needs timing management in browser)
+    // for console (since adding new Tile needs timing management in browser)
     runmv(dir:Direction) {
         if(this.busy) return false;
         this.busy = true;
@@ -205,4 +205,4 @@ class tile_board {
 }
 
 
-export {Direction, tile, tile_column, tile_board};
+export {Direction, Tile, tile_column, tile_board};
