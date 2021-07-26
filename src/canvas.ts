@@ -62,8 +62,8 @@ function createSVGboard() {
 }
 
 let svg_board: tboard;  // the SVG elements
-var game_board: tile_board; // tracks tiles' state and score
-var [done, busy] = [true, true];
+let game_board: tile_board; // tracks tiles' state and score
+let [done, busy] = [true, true];
 
 // testing plotting:
 const rand_plot = function () {
@@ -77,6 +77,7 @@ const rand_plot = function () {
     svg_board.drawTiles(tBoard);
 }
 
+// move this inside svg_board constructor?
 const setup = function (): void {
     const [W, H] = getSliderVals();
     const ecol = tile_column.val_col(Array(W * H).fill(0));
@@ -103,7 +104,7 @@ async function process_keystroke(evt:KeyboardEvent): Promise<void> {
     const key = evt.key;
     if(keymap.hasOwnProperty(key)) {
         const dir = keymap[key];
-        console.info(`Key ${key} was pressed, moving ${dir}.`);
+        // console.info(`Key ${key} was pressed, moving ${dir}.`);
         mv = game_board.move_tiles(dir);
     }
     if (game_board.danzo) {

@@ -27,13 +27,9 @@ function bg_deco(W:number, H:number, n:number, scale:number): bg_decorator {
     return rv;
 }
 
-const ix_map = [...Array(11).keys()].map(e => Math.pow(2,e+1));
-const ix_rev = Object.fromEntries(ix_map.map((e,i) => [e, i+1]));
-
 /* theme colors needed for drawing a Tile */
-function theme_colors(theme:BoardTheme, n: number) {
-    const ix = ix_rev[n] || 0;
-    return [theme.fills[ix], theme.strokes[ix], theme.text_color[ix]];
+function theme_colors(theme:BoardTheme, n: number): Array<string> {
+    return [theme.fills[n], theme.strokes[n], theme.text_color[n]];
 }
 
 function age_tile(tile_id: string, cc: Array<string>) {
@@ -60,16 +56,24 @@ class tboard {
     font_size: string;
     board_dim: Array<number>;
     theme: BoardTheme;
+    ix_map: Map<number,number>;
+    busy:boolean;
 
     constructor(width: number, height: number, theme: BoardTheme) {
         [this.bgW, this.bgH] = [width, height];
         const bb = Math.max(width, height);
-        [this.scoreW, this.scoreH, this.sep] = [0.4 * bb, 0.17 * bb, 0.05 * bb];
+        [this.scoreW, this.scoreH, this.sep] = [0.4 * width, 0.17 * height, 0.05 * bb];
         [this.canvasW, this.canvasH] = [this.bgW + 2 * this.sep, this.bgH + this.scoreH + 3 * this.sep];
         this.score = 0;
         this.dim = [4, 4]; // initialize correctly!
         this.in_play = false; // only 'true' once tiles drawn
         this.theme = theme;
+        const ix_rev = new Map();
+        const ix_map = [...Array(11).keys()].map(e => Math.pow(2,e+1));
+        ix_map.forEach((e,i) => ix_rev.set(e,i+1));
+        this.ix_map = ix_rev;
+        this.in_play = false;
+
     }
     setTheme(theme:BoardTheme) {
         this.theme = theme;
@@ -113,29 +117,34 @@ class tboard {
     }
     drawBackground(W:number, H:number): void {
         const [boardW, boardH] = scale_rect(W, H, this.bgW, this.bgH).map(v => Math.round(v));
-        const boffH = 2 * this.sep + this.scoreH + (this.bgH - boardH);
+        const boffH = 2 * this.sep + this.scoreH + 0.5 * (this.bgH - boardH);
+        const boffW = 0.5 * (this.canvasW - boardW);
         const [gapV, gapH] = [boardW / W, boardH / H]; // 'latitudes' and 'longitudes'
-        const c_theme = this.theme;
-        D3select("body").style("background-color", c_theme.body_bg);
-        const [bg_stroke, bg_fill] = [c_theme.bg_line, c_theme.bg_fill]; // coordinate bg with tile colors
+        D3select("body").style("background-color", this.theme.body_bg);
         D3select("#board").html(''); // clear existing
         // basic outline
-        var canvas = D3select('#board').append('svg').attr('width', this.canvasW).attr('height', this.canvasH)
-            .attr('class', 'gamebox').attr('id', 'game_box').style('background-color', c_theme.box_bg);
+        const canvas = D3select('#board').append('svg')
+            .attr('width', this.canvasW).attr('height', this.canvasH)
+            .attr('class', 'gamebox').attr('id', 'game_box')
+            .style('background-color', this.theme.box_bg);
+        // score box
         const [x0, y0, xW, yW] = this.scoreXY;
         canvas.append('rect').attr('x', x0).attr('y', y0)
-            .attr('width', xW).attr('height', yW).attr("id", 'score_box').attr('rx', 5).attr('ry', 5);
+            .attr('width', xW).attr('height', yW)
+            .attr("id", 'score_box').attr('rx', 5).attr('ry', 5);
         this.updateScore(this.score);
         // the board itself
-        canvas.append('rect').attr('x', this.sep).attr('y', boffH).attr('width', boardW).attr('height', boardH)
-            .attr('class', 'tile_bg').attr('fill', bg_fill).attr('stroke', bg_stroke);
+        const bg_stroke = this.theme.bg_line; // coordinate bg with tile colors
+        canvas.append('rect').attr('x', boffW).attr('y', boffH)
+            .attr('width', boardW).attr('height', boardH)
+            .attr('class', 'tile_bg').attr('fill', this.theme.bg_fill).attr('stroke', bg_stroke);
 
         // decorating background
         const n_deco = 75;
         let decs = bg_deco(boardW, boardH, n_deco, 0.01);
         let rU = runif(n_deco, 0.25, 4);
         for (let k = 0; k < n_deco; k++) {
-            let [xc, yc, rx, ry] = [this.sep + decs.x[k], boffH + decs.y[k], rU[k] * decs.scale[k], decs.scale[k]]
+            let [xc, yc, rx, ry] = [boffW + decs.x[k], boffH + decs.y[k], rU[k] * decs.scale[k], decs.scale[k]]
                 .map(e => Math.round(100 * e) / 100);
             canvas.append('ellipse').attr('cx', xc).attr('cy', yc)
                 .attr('rx', rx).attr('ry', ry)
@@ -143,17 +152,17 @@ class tboard {
                 .attr('transform', `rotate(${decs.rot[k]},${xc},${yc})`);
         }
         for (let i = 1; i < W; i++) { // longitudes
-            const xx = (this.sep + i * gapH).toFixed(3);
+            const xx = (boffW + i * gapH).toFixed(3);
             canvas.append('line').attr('x1', xx).attr('y1', boffH).attr('x2', xx).attr('y2', boffH + boardH)
                 .attr('class', 'tile_grid').attr('stroke', bg_stroke);
         }
         for (let j = 1; j < H; j++) { // latitudes
             const yy = (boffH + j * gapV).toFixed(3);
-            canvas.append('line').attr('x1', this.sep).attr('y1', yy).attr('x2', this.sep + boardW).attr('y2', yy)
+            canvas.append('line').attr('x1', boffW).attr('y1', yy).attr('x2', boffW + boardW).attr('y2', yy)
                 .attr('class', 'tile_grid').attr('stroke', bg_stroke);
         }
         this.dim = [W, H];
-        this.XYoffset = [this.sep, boffH];
+        this.XYoffset = [boffW, boffH];
         this.tile_size = (this.bgW / Math.max(W, H));
         const fontAdj = (5 - Math.log2(Math.max(W, H))).toFixed(3);
         this.font_size = fontAdj + 'rem'; // need to add pixel size scaling also
@@ -168,14 +177,14 @@ class tboard {
         };
         const [tw, tgap] = [this.tile_size, this.tile_size * 0.1];
         const [tadj, txy, trad, tdim] = [tw * 0.5 - tgap, this.boardXY, 0.125 * tw, (tw - 2 * tgap).toFixed(3)];
-        const cv = D3select('#game_box');
-        const fs = this.font_size;
         ['tile_num', 'fg_tile', 'bg_tile', 'new_tile'].forEach(e => rm_class(e));
+        const cv = D3select('#game_box');
         tile_arr.cols.map( (col, ix) => {
             const xoff = ix * tw + txy[0] + tgap;
             col.forEach((elem, i) => {
                 let [n, yoff, tile_id] = [elem.val, txy[1] + tw * i + tgap, `tile_${ix}_${i}`];
-                let [tfill, tstroke, txtc] = theme_colors(this.theme, n);
+                const ixd = this.ix_map.get(n) || 0;
+                let [tfill, tstroke, txtc] = theme_colors(this.theme, ixd);
                 cv.append('rect').attr('x', xoff).attr('y', yoff)
                     .attr('width', tdim).attr('height', tdim)
                     .attr('id', tile_id)
@@ -185,7 +194,7 @@ class tboard {
                 if (n > 0) {
                     cv.append('text').attr('x', xoff + tadj)
                         .attr('y', yoff + tadj).html(String(n)).attr('class', 'tile_num')
-                        .attr('fill', txtc).attr('font-size', fs);
+                        .attr('fill', txtc).attr('font-size', this.font_size);
                 }
             });
         });
@@ -206,14 +215,17 @@ class tboard {
         cv.append('text').attr('x', xoff + tadj).attr('y', yoff + tadj).html(String(tile.val))
             .attr('class', 'tile_num').attr('fill', this.theme.new_text)
             .attr('font-size', this.font_size).attr('id', 'new_tile_num');
-        // todo: fade on a gradient  
-        window.setTimeout(age_tile, 250, `tile_${i}_${j}`, theme_colors(this.theme, tile.val));
+        // todo: fade on a gradient
+        const ix = this.ix_map.get(tile.val) || 0;
+        window.setTimeout(age_tile, 250, `tile_${i}_${j}`, theme_colors(this.theme, ix));
     }
     // upon losing 'grey out' the board
     drawOverlay(col:string = "#dadada") {
         let [x0, y0] = this.boardXY;
         let [xw, yw] = this.board_dim;
-        D3select("#game_box").append('rect').attr('x', x0).attr('y', y0).attr('width', xw).attr('height', yw).attr('fill', col).attr('fill-opacity', 0.33);
+        D3select("#game_box").append('rect').attr('x', x0).attr('y', y0)
+            .attr('width', xw).attr('height', yw)
+            .attr('fill', col).attr('fill-opacity', 0.33);
     }
 }
 

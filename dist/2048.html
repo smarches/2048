@@ -5,7 +5,6 @@
     <meta charset="utf-8" />
     <title>2048</title>
     <link rel="stylesheet" type='text/css' href='2048.css'>
-    <!-- all the d3/SVG/io stuff -->
     <script src='wp-utils.js'></script>
 </head>
 
@@ -13,6 +12,11 @@
     <div id="main">
         <h1 id='bukk'>&ldquo;2048&rdquo;</h1>
         <div id="ctrl" class="gird">
+            <div class="gird2">
+                <!--NOTE the order (first input, then label) is crucial here!! -->
+                <input type="checkbox" id="theme1" class="cbx hidden" />
+                <label for="theme1" class="lbl"></label>
+            </div>
             <!-- Sliders occupy 'columns' {2,3} -->
             <div class="gird1">
                 <div class="rgird">
@@ -28,13 +32,8 @@
                 </div>
             </div>
             <!-- other buttons occupy column {4} -->
-            <div class="gird2">
-                <!--NOTE the order (first input, then label) is crucial here!! -->
-                <input type="checkbox" id="theme1" class="cbx hidden" />
-                <label for="theme1" class="lbl"></label>
-            </div>
             <div class="gird3">
-                <input type="button" value="Start!" id="start_game" class="btn">
+                <input type="button" value="Start" id="start_game" class="btn">
             </div>
         </div>
         <br>
