@@ -3,7 +3,7 @@ import path from 'path';
 export default {
     entry: './src/canvas.ts',
     resolve: {
-        extensions: [".ts", ".js"],
+        extensions: [".ts", ".js", ".sass"],
         // this did not appear to work
         alias: {
             NodeModules: path.resolve('./node_modules/'),
@@ -13,8 +13,9 @@ export default {
     // despite being in MODULE this pertains to 'loaders'
     module: {
         rules: [
-            { test: /\.ts$/, use: 'ts-loader' }
-        ],
+            { test: /\.ts$/, use: 'ts-loader' },
+            { test: /\.sass$/, use: 'sass-loader'}
+        ]
     },
     output: {
         filename: 'wp-utils.js',

@@ -37,7 +37,7 @@ function runif(n:number, a:number = 0, b:number = 1): Array<number> {
 function rexp(n: number, lambda: number): Array<number> {
     if (isNaN(lambda) || lambda <= 0) throw `rexp: invalid lambda parameter (${lambda})`;
     if (isNaN(n) || n < 1) throw `rexp: invalid n parameter (${n})`;
-    return Array.apply(0, Array(n)).map(e => -Math.log(Math.random()) / lambda);
+    return Array.apply(0, Array(n)).map(_ => -Math.log(Math.random()) / lambda);
 }
 
 export {sample, runif, rexp};

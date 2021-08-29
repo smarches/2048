@@ -2,7 +2,6 @@ import { flattenDepth } from 'lodash';
 import { rotate_array } from "./arrays";
 import { sample } from "./random";
 
-// TODO: export this?
 const enum Direction{
     Down,
     Left,
