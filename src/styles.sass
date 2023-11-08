@@ -15,6 +15,7 @@ $roundSwitchDim: 26px
 
 %switchTransition
     display: block
+    margin: auto
     transition: all 0.33s ease
 
 .tile_grid, .fg_tile, .tile_bg
@@ -179,7 +180,6 @@ input[type='button']:hover
 
 .gird 
     display: grid
-    /* grid-template-columns: repeat(4,1fr) */
     /* each of middle 2 cols is between specified em: */
     grid-template-columns: auto minmax(5rem,8rem) minmax(12rem, 16rem) minmax(5rem,8rem) auto
     gap: 1rem
@@ -199,9 +199,6 @@ input[type='button']:hover
     display: flex
     align-items: center
     border-radius: 0.33rem
-    /* background-image: url('./media/animal-crab-creature-76966.jpg') */
-    /* background-origin: border-box */
-    /* background-size: 100% */
 
 .gird3 
     grid-column: 4 / 5

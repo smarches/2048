@@ -13,7 +13,7 @@ const _2048 = function(W=4,H=4) {
     board.print();
     process.stdin.setRawMode(true);
     process.stdin.on('keypress',function(letter,key) {
-        var dir;
+        var dir: Direction;
         switch(key.name) {
             case 'h':
                 dir = Direction.Left;
@@ -30,7 +30,7 @@ const _2048 = function(W=4,H=4) {
             default:
                 break;
         }
-        if(Boolean(dir)){
+        if(Boolean(dir)) {
             board.runmv(dir);
             console.clear();
             board.print();

@@ -30,8 +30,17 @@ function rotate_array<T>(AA:Array2d<T>,times:number = 0,dir:string = 'clockwise'
     return res;
 }
 
-// just import lodash?
 function chunk<T>(arr:Array<T>, n:number, fill_val:any = null): Array<Array<T>> {
+    /**
+     * Splits the input array into n chunks
+     *
+     * @remarks
+     * Note that n is the number of chunks, not the size of each chunk.
+     *
+     * @param arr - an array to split up
+     * @param n - number of chunks
+     * @param fill_val - if non-null, the last chunk will be padded with this value, if needed
+     */
     const n_res = Math.ceil(arr.length / n);
     const res = [];
     for (let i = 0; i < n_res; i++) res.push([]);

@@ -14,7 +14,9 @@ export default {
     module: {
         rules: [
             { test: /\.ts$/, use: 'ts-loader' },
-            { test: /\.sass$/, use: 'sass-loader'}
+            // want to use asset modules here https://webpack.js.org/guides/asset-modules/
+            // currently this simply gets ignored and the build runs "successfully" without emitting
+            { test: /\.sass$/, use: ['file-loader','sass-loader'] } 
         ]
     },
     output: {
