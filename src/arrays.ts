@@ -3,24 +3,24 @@
 // input array must be rectangular for this to be sensible
 type Array2d<T> = Array<Array<T>>;
 
-function rotate_array<T>(AA:Array2d<T>,times:number = 0,dir:string = 'clockwise'): Array2d<T> {
+function rotate_array<T>(AA: Array2d<T>, times: number = 0, dir: string = 'clockwise'): Array2d<T> {
     times %= 4; // equivalence group
-    if(times < 0) times += 4;
-    if(dir != 'clockwise') times = 4 - times;
+    if (times < 0) times += 4;
+    if (dir != 'clockwise') times = 4 - times;
     let res = [];
     const M = AA[0].length;
-    switch(times) {
+    switch (times) {
         case 1:
-            for(let i=0;i<M;i++){
-                res.push( AA.map(A => A[i]).reverse() );
+            for (let i = 0; i < M; i++) {
+                res.push(AA.map(A => A[i]).reverse());
             }
             break;
         case 2: // need slice() to get a copy (otherwise modifies input AA)
-            res = AA.map( a => a.slice().reverse() ).reverse();
+            res = AA.map(a => a.slice().reverse()).reverse();
             break;
         case 3:
-            for(let i=M-1;i>=0;i--){
-                res.push( AA.map( A => A[i]) );
+            for (let i = M - 1; i >= 0; i--) {
+                res.push(AA.map(A => A[i]));
             }
             break;
         default:
@@ -30,7 +30,7 @@ function rotate_array<T>(AA:Array2d<T>,times:number = 0,dir:string = 'clockwise'
     return res;
 }
 
-function chunk<T>(arr:Array<T>, n:number, fill_val:any = null): Array<Array<T>> {
+function chunk<T>(arr: Array<T>, n: number, fill_val: any = null): Array<Array<T>> {
     /**
      * Splits the input array into n chunks
      *
@@ -52,4 +52,4 @@ function chunk<T>(arr:Array<T>, n:number, fill_val:any = null): Array<Array<T>> 
     return res;
 }
 
-export {chunk, rotate_array};
+export { chunk, rotate_array };

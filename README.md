@@ -15,7 +15,7 @@ npm list <package>
 check available version:
 
 ```bash
-npm view <package>
+npm view <package>[@latest]
 ```
 
 ## Building
@@ -34,6 +34,16 @@ check in on dependecies:
 ```bash
 npm audit fix
 ```
+
+### Sass
+
+To run separately, may use:
+
+```bash
+npm install -g sass
+```
+
+then, ex., `sass src/styles.sass dist/styles.css`
 
 ## Running
 

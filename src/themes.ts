@@ -1,11 +1,10 @@
 
-
 interface BoardTheme {
     fills: Array<string>;
     strokes: Array<string>;
     text_color: Array<string>;
     // bg tiles
-    bg_fill: string; 
+    bg_fill: string;
     bg_line: string;
     bg_text: string;
     // new tiles
@@ -21,18 +20,18 @@ interface BoardTheme {
 };
 
 const tanMaroonTheme: BoardTheme = {
-        
+
     'fills': ['#F3DD84', '#FFFFCC', '#FFF0A8', '#FEE186', '#FEC965', '#FDAA48', '#FD8D3C', '#FC5A2D', '#EC2E21', '#D30F20', '#B00026', '#800026'],
     'strokes': ['#5E3B07', '#BBBB54', '#C0AE36', '#C1A309', '#C19107', '#C07A01', '#C16404', '#C03D10', '#AF261E', '#A00A16', '#88001B', '#65001C'],
     'text_color': ['#6F614C', '#7A7A05', '#7E7104', '#7E6901', '#7F5E01', '#7F4F00', '#814100', '#842500', '#7F0900', '#FF9295', '#FF8089', '#E67686'],
-    'bg_fill': '#F3DD84',  
+    'bg_fill': '#F3DD84',
     'bg_line': '#5E3B07',
     'bg_text': '#6F614C',
-    'new_fill': '#EEAF66', 
+    'new_fill': '#EEAF66',
     'new_line': '#7C5416',
     'new_text': '#901F28',
-    'body_bg': '#927736',  
-    'box_bg': '#96a696',   
+    'body_bg': '#927736',
+    'box_bg': '#96a696',
     'score_bg': '#443322',
     'score_text': '#ffebcd'
 };
@@ -58,4 +57,4 @@ const themes = {
     "green/purple": greenPurpleTheme
 };
 
-export {BoardTheme, themes};
+export { BoardTheme, themes };

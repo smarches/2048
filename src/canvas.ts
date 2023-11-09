@@ -31,15 +31,21 @@
 // [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
 // [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
-import {select as D3select} from "d3-selection";
-import {themes} from './themes';
-import { id, inputValueAsNumber, sleep} from './utils';
-import {chunk} from './arrays';
-import {tile_board, tile_column, Direction} from './tiles';
-import {tboard} from "./tile_board";
+import { select as D3select } from "d3-selection";
+import { themes } from './themes';
+import { id, inputValueAsNumber, sleep } from './utils';
+import { chunk } from './arrays';
+import { tile_board, tile_column, Direction } from './tiles';
+import { tboard } from "./tile_board";
 
-// fill in ticks - note that browsers don't currently support this (July 2019) (still not supported July 2021!) but will someday!
 function setupRangeSliders(): void {
+    /**
+     * Populate ticks for board size selector components
+     *
+     * @remarks
+     * check browsers support for this
+     *
+     */
     const [min_board_size, max_board_size] = [2, 20];
     for (let i = min_board_size; i <= max_board_size; i += 2) {
         const opt = document.createElement('option');
@@ -50,7 +56,8 @@ function setupRangeSliders(): void {
     }
 }
 
-const gameDim = () => Math.min(Math.max(200,window.innerHeight),500);
+// set up dimensions between 200 and 500 according to screen size
+const gameDim = () => Math.min(Math.max(200, window.innerHeight), 500);
 
 const getTheme = () => (id('theme1') as HTMLInputElement).checked ? themes['green/purple'] : themes['tan/maroon'];
 
@@ -68,7 +75,7 @@ let [done, busy] = [true, true];
 // testing plotting:
 const rand_plot = function () {
     const [W, H] = getSliderVals();
-    const tvals = Array(W*H).fill(0).map(_ => {
+    const tvals = Array(W * H).fill(0).map(_ => {
         let rv = Math.log2(Math.ceil(1. / Math.random()));
         return rv < 2 ? 0 : Math.floor(rv);
     });
@@ -91,18 +98,18 @@ const setup = function (): void {
     busy = false; done = false;
 }
 
-async function process_keystroke(evt:KeyboardEvent): Promise<void> {
+async function process_keystroke(evt: KeyboardEvent): Promise<void> {
     if (busy || done) return;
     busy = true;
     const keymap = {
-        'ArrowLeft':  Direction.Left,
+        'ArrowLeft': Direction.Left,
         'ArrowRight': Direction.Right,
-        'ArrowUp':    Direction.Up,
-        'ArrowDown':  Direction.Down
+        'ArrowUp': Direction.Up,
+        'ArrowDown': Direction.Down
     };
     let mv = [];
     const key = evt.key;
-    if(keymap.hasOwnProperty(key)) {
+    if (keymap.hasOwnProperty(key)) {
         const dir = keymap[key];
         // console.info(`Key ${key} was pressed, moving ${dir}.`);
         mv = game_board.move_tiles(dir);
@@ -125,17 +132,17 @@ function lose(): void {
     svg_board.in_play = false;
 }
 
-document.addEventListener('keyup',process_keystroke);
+document.addEventListener('keyup', process_keystroke);
 
-window.addEventListener('load',setupRangeSliders);
+window.addEventListener('load', setupRangeSliders);
 
-window.addEventListener('load',function(){
+window.addEventListener('load', function () {
     svg_board = createSVGboard();
     D3select("#board").style('min-height', `${gameDim() + 20}px`);
     // controls/options for game (UI is exclusive to front-end)
-    id('start_game').addEventListener('click',setup);
+    id('start_game').addEventListener('click', setup);
     // link with sliders
-    id('board_size_H').addEventListener('input', function (){
+    id('board_size_H').addEventListener('input', function () {
         const val = (this as HTMLInputElement).value;
         id('height_slider').innerHTML = `Height (${val})`;
     });
@@ -149,7 +156,7 @@ window.addEventListener('load',function(){
     id('board_size_W').dispatchEvent(slidy_event);
     // likewise ensure default position of checkbox
     (id('theme1') as HTMLInputElement).checked = false;
-    
+
     id('theme1').onchange = function () {
         if (!busy && svg_board.in_play) {
             busy = true;
