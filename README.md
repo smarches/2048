@@ -43,7 +43,7 @@ To run separately, may use:
 npm install -g sass
 ```
 
-then, ex., `sass src/styles.sass dist/styles.css`
+then, ex., `sass src/styles.scss dist/styles.css`
 
 ## Running
 
