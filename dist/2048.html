@@ -21,13 +21,14 @@
             <div class="gird1">
                 <div class="rgird">
                     <div class="rgird1">
+                        <!-- bug for Firefox impl of datalist: https://bugzilla.mozilla.org/show_bug.cgi?id=1535985 -->
                         <datalist id='dticks'></datalist>
                         <label for="board_size_W" id='width_slider' class='slidylabel'>Width (4)</label>
-                        <input type="range" min="2" max="20" value="4" class="slidy" id="board_size_W" list="dticks">
+                        <input type="range" min="2" max="10"step="1" value="4" class="slidy" id="board_size_W" list="dticks">
                     </div>
                     <div class="rgird2">
                         <label for="board_size_H" id='height_slider' class='slidylabel'>Height (4)</label>
-                        <input type="range" min="2" max="20" value="4" class="slidy" id="board_size_H" list="dticks">
+                        <input type="range" min="2" max="10" step="1" value="4" class="slidy" id="board_size_H" list="dticks">
                     </div>
                 </div>
             </div>

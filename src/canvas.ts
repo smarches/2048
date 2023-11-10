@@ -9,16 +9,20 @@
 // although this is probably not ideal. 
 
 // TODO:
+// [ ] end of game/reset
+// [ ] lettering of score box
+// [ ] sounds (consult https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and see https://github.com/goldfire/howler.js/
+// [ ] size board to fit vertical screen height
+// [ ] size score box relative to board size
+// [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
+// [ ] z-axis in D3? Want dots above background tiles/grid but below numbered tiles
 // [x] tile appearance should scale with board layout (cannot have abs. rx/ry/font-size)
 // [x] material switch and second color theme
-// [ ] lettering of score box
 // [x] score change 'animation' w/ css3 transition or d3 transition
 // [x] add theme colors to score box
 // [x] button to coordinate sizing (start game)
 // [x] keypress
-// [ ] sounds (consult https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and see https://github.com/goldfire/howler.js/
 // [x] animation delay
-// [ ] end of game/reset
 // [x] reset everything on window reload
 // [x] disable adding new tile when nothing changes
 // [x] new tile animation with css transitions (doesn't work since classes are not enumerated manually)
@@ -26,10 +30,6 @@
 // [x] excise all but necessary d3 dependencies
 // [x] fancify background (random size/shading - doens't look great)
 // [x] bug when switching colors and board size sliders have been changed (need one more abstraction for drawBackground)
-// [ ] size board to fit vertical screen height
-// [ ] size score box relative to board size
-// [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
-// [ ] z-axis in D3? Want dots above background tiles but below numbered tiles
 
 import { select as D3select } from "d3-selection";
 import { themes } from './themes';
@@ -43,15 +43,15 @@ function setupRangeSliders(): void {
      * Populate ticks for board size selector components
      *
      * @remarks
-     * check browsers support for this
+     * Firefox lags support for labels - https://bugzilla.mozilla.org/show_bug.cgi?id=1535985
      *
      */
-    const [min_board_size, max_board_size] = [2, 20];
+    const [min_board_size, max_board_size] = [2, 10];
     for (let i = min_board_size; i <= max_board_size; i += 2) {
         const opt = document.createElement('option');
         const dlist = id('dticks');
         opt.value = String(i);
-        if ([2, 4, 8, 12, 16, 20].includes(i)) opt.label = String(i);
+        if (i % 2 === 0) opt.label = String(i);
         dlist.appendChild(opt);
     }
 }
@@ -141,7 +141,7 @@ window.addEventListener('load', function () {
     D3select("#board").style('min-height', `${gameDim() + 20}px`);
     // controls/options for game (UI is exclusive to front-end)
     id('start_game').addEventListener('click', setup);
-    // link with sliders
+    // update UI to show currently selected slider value
     id('board_size_H').addEventListener('input', function () {
         const val = (this as HTMLInputElement).value;
         id('height_slider').innerHTML = `Height (${val})`;
@@ -154,12 +154,13 @@ window.addEventListener('load', function () {
     const slidy_event = new Event('input', { 'bubbles': true, 'cancelable': true });
     id('board_size_H').dispatchEvent(slidy_event);
     id('board_size_W').dispatchEvent(slidy_event);
-    // likewise ensure default position of checkbox
+    // likewise ensure default position of checkbox to reset the theme
     (id('theme1') as HTMLInputElement).checked = false;
 
     id('theme1').onchange = function () {
         if (!busy && svg_board.in_play) {
             busy = true;
+            // might not want to update this here?
             const [W, H] = getSliderVals();
             svg_board.setTheme(getTheme());
             svg_board.drawBackground(W, H);
@@ -167,4 +168,17 @@ window.addEventListener('load', function () {
             busy = false;
         }
     }
+
+    window.addEventListener('resize',() => {
+        // console.log(`The window was resized! Dims now ${window.innerWidth} x ${window.innerHeight}`);
+        // this also prevents resizing too often if something is being dragged
+        const [newWidth, newHeight] = [window.innerWidth, window.innerHeight];
+        const [canvasW, canvasH] = [svg_board.canvasW, svg_board.canvasH];
+        // only resize if the current dimensions are significantly different:
+        
+        // resize the board with the new constraints..
+        // want to add a resize method to tile_board.ts?
+        const newDim = gameDim();
+        svg_board.resize(newDim,newDim,game_board);
+    });
 });

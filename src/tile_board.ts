@@ -4,7 +4,7 @@ import { transition } from "d3-transition";
 import { brighten_color, id, rm_class, scale_rect } from './utils';
 import { runif } from './random';
 import { BoardTheme } from './themes';
-import { tile_board, Tile } from './tiles';
+import { powersOfTwoMap, tile_board, Tile } from './tiles';
 
 // one-off interface to satisfy the compiler
 interface bg_decorator {
@@ -41,7 +41,7 @@ function theme_colors(theme: BoardTheme, n: number): Array<string> {
     return [theme.fills[n], theme.strokes[n], theme.text_color[n]];
 }
 
-function age_tile(tile_id: string, cc: Array<string>) {
+function age_tile(tile_id: string, cc: Array<string>): void {
     const tile = id(tile_id);
     tile.classList.add('fg_tile');
     tile.setAttribute('fill', cc[0]);
@@ -50,39 +50,40 @@ function age_tile(tile_id: string, cc: Array<string>) {
 }
 
 class tboard {
-    bgW: number;
-    bgH: number;
-    scoreW: number;
-    scoreH: number;
-    canvasW: number;
-    canvasH: number;
-    score: number;
-    sep: number;
-    dim: Array<number>;
-    in_play: Boolean;
-    XYoffset: Array<number>;
-    tile_size: number;
+    // dimension/scaling attributes:
+    bgW: number; // (requested) width of game board - gets scaled to board_dim when drawing
+    bgH: number; // (requested) height of game board
+    scoreW: number; // width of score box
+    scoreH: number; // height of score box
+    canvasW: number; // width of board's container
+    canvasH: number; // height of board's container
+    sep: number; // padding equal to 0.05 * max(bgW,bgH)
+    dim: Array<number>; // number of horizontal and vertical tiles
+    XYoffset: Array<number>; // offset relative to ??? of top left board corner 
+    board_dim: Array<number>; // stores boardW, boardH, the dimensions (in pixels) of the board itself
+    tile_size: number; // size in pixels of the (square) tiles
     font_size: string;
-    board_dim: Array<number>;
+    // attributes related to the game
+    score: number;
+    in_play: Boolean;
     theme: BoardTheme;
-    ix_map: Map<number, number>;
+    ix_map: Map<number, number>; // 
     busy: boolean;
 
     constructor(width: number, height: number, theme: BoardTheme) {
+        this.in_play = false; // only 'true' once tiles drawn
+        this.setSizeParams(width,height);
+        this.score = 0;
+        // this.dim = [4, 4]; // initialize correctly!
+        this.theme = theme;
+        this.ix_map = powersOfTwoMap(11);
+    }
+
+    setSizeParams(width: number,height:number) {
         [this.bgW, this.bgH] = [width, height];
         const bb = Math.max(width, height);
         [this.scoreW, this.scoreH, this.sep] = [0.4 * width, 0.17 * height, 0.05 * bb];
         [this.canvasW, this.canvasH] = [this.bgW + 2 * this.sep, this.bgH + this.scoreH + 3 * this.sep];
-        this.score = 0;
-        this.dim = [4, 4]; // initialize correctly!
-        this.in_play = false; // only 'true' once tiles drawn
-        this.theme = theme;
-        const ix_rev = new Map();
-        const ix_map = [...Array(11).keys()].map(e => Math.pow(2, e + 1));
-        ix_map.forEach((e, i) => ix_rev.set(e, i + 1));
-        this.ix_map = ix_rev;
-        this.in_play = false;
-
     }
     setTheme(theme: BoardTheme) {
         this.theme = theme;
@@ -131,7 +132,7 @@ class tboard {
         const [gapV, gapH] = [boardW / W, boardH / H]; // 'latitudes' and 'longitudes'
         D3select("body").style("background-color", this.theme.body_bg);
         D3select("#board").html(''); // clear existing
-        // basic outline
+        // background container
         const canvas = D3select('#board').append('svg')
             .attr('width', this.canvasW).attr('height', this.canvasH)
             .attr('class', 'gamebox').attr('id', 'game_box')
@@ -180,8 +181,9 @@ class tboard {
     }
     // drawing all tiles @ once
     drawTiles(tile_arr: tile_board): void {
-        if (this.dim[0] != tile_arr.w || this.dim[1] != tile_arr.h) {
-            console.error(`Wrong # of tiles! tile_arr has ${tile_arr.w} by ${tile_arr.h} and the_board is ${this.dim[0]} x ${this.dim[1]}`);
+        const [dW,dH]= this.dim;
+        if (dW != tile_arr.w || dH != tile_arr.h) {
+            console.error(`Wrong # of tiles! tile_arr has ${tile_arr.w} by ${tile_arr.h} and the_board is ${dW} x ${dH}`);
             return;
         };
         const [tw, tgap] = [this.tile_size, this.tile_size * 0.1];
@@ -235,6 +237,13 @@ class tboard {
         D3select("#game_box").append('rect').attr('x', x0).attr('y', y0)
             .attr('width', xw).attr('height', yw)
             .attr('fill', col).attr('fill-opacity', 0.33);
+    }
+    resize(width:number,height:number,board:tile_board): void {
+        // resize the board
+        this.drawBackground(width,height); 
+        // redraw tiles:
+        this.drawTiles(board);
+        return;
     }
 }
 

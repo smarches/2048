@@ -3,7 +3,7 @@ import path from 'path';
 export default {
     entry: './src/canvas.ts',
     resolve: {
-        extensions: [".ts", ".js", ".sass"],
+        extensions: [".ts", ".js", ".scss"],
         // this did not appear to work
         alias: {
             NodeModules: path.resolve('./node_modules/'),
@@ -16,7 +16,7 @@ export default {
             { test: /\.ts$/, use: 'ts-loader' },
             // want to use asset modules here https://webpack.js.org/guides/asset-modules/
             // currently this simply gets ignored and the build runs "successfully" without emitting
-            { test: /\.sass$/, use: ['file-loader','sass-loader'] } 
+            { test: /\.scss$/, use: ['file-loader','sass-loader'] } 
         ]
     },
     output: {
