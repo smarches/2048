@@ -56,16 +56,18 @@ function setupRangeSliders(): void {
     }
 }
 
+const clip = (x:number,a:number,b:number) => Math.max(a,Math.min(x,b));
+
 // set up dimensions between 200 and 500 according to screen size
-const gameDim = () => Math.min(Math.max(200, window.innerHeight), 500);
+// taking up to 100% of width in the case of a narrow screen, but only 500 px max
+const gameDim = () => Math.min(window.innerWidth,clip(window.innerHeight,200, 500));
 
 const getTheme = () => (id('theme1') as HTMLInputElement).checked ? themes['green/purple'] : themes['tan/maroon'];
 
 const getSliderVals = () => [inputValueAsNumber("board_size_W"), inputValueAsNumber("board_size_H")];
 
 function createSVGboard() {
-    const board_dim = gameDim();
-    return new tboard(board_dim, board_dim, getTheme());
+    return new tboard(gameDim(), getTheme());
 }
 
 let svg_board: tboard;  // the SVG elements
@@ -173,12 +175,11 @@ window.addEventListener('load', function () {
         // console.log(`The window was resized! Dims now ${window.innerWidth} x ${window.innerHeight}`);
         // this also prevents resizing too often if something is being dragged
         const [newWidth, newHeight] = [window.innerWidth, window.innerHeight];
-        const [canvasW, canvasH] = [svg_board.canvasW, svg_board.canvasH];
+        const [canvasW, canvasH] = [svg_board.canvasSize.width, svg_board.canvasSize.height];
         // only resize if the current dimensions are significantly different:
         
         // resize the board with the new constraints..
         // want to add a resize method to tile_board.ts?
-        const newDim = gameDim();
-        svg_board.resize(newDim,newDim,game_board);
+        // svg_board.resize(gameDim(),game_board);
     });
 });
