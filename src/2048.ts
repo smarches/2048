@@ -33,7 +33,7 @@ const _2048 = function (W = 4, H = 4) {
             board.runmv(dir);
             console.clear();
             board.print();
-            if (board.danzo) {
+            if (board.no_move) {
                 console.log("You lost!");
                 process.exit();
             }

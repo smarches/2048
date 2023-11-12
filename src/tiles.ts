@@ -9,7 +9,7 @@ const enum Direction {
     Up
 };
 
-function powersOfTwoMap(n: number): Map<number,number> {
+function powersOfTwoMap(n: number): Map<number, number> {
     // set up map from powers of two to (1-based) indices, (2,1), (4,2), (8,3), etc.
     // this is used to map tile values to theme colors
     const ix_map = [...Array(n).keys()].map(e => Math.pow(2, e + 1));
@@ -20,7 +20,7 @@ function powersOfTwoMap(n: number): Map<number,number> {
 
 class Tile {
     _val: number;
-    ix_rev: Map<number,number>;
+    ix_rev: Map<number, number>;
     constructor(n: number) {
         this.ix_rev = powersOfTwoMap(11);
         this.update(n);
@@ -131,7 +131,7 @@ class tile_board {
     get vals() {
         return flattenDepth(this.cols, 1).map(e => e.val);
     }
-    get danzo() { // all done?
+    get no_move() { // all done?
         return Object.entries(this.end_state).reduce((a, b) => a && b[1], true);
     }
     // inner loop of a given move is rotate -> move/update -> unrotate -> paint screen

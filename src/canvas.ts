@@ -66,10 +66,6 @@ const getTheme = () => (id('theme1') as HTMLInputElement).checked ? themes['gree
 
 const getSliderVals = () => [inputValueAsNumber("board_size_W"), inputValueAsNumber("board_size_H")];
 
-function createSVGboard() {
-    return new tboard(gameDim(), getTheme());
-}
-
 let svg_board: tboard;  // the SVG elements
 let game_board: tile_board; // tracks tiles' state and score
 let [done, busy] = [true, true];
@@ -91,7 +87,7 @@ const setup = function (): void {
     const [W, H] = getSliderVals();
     const ecol = tile_column.val_col(Array(W * H).fill(0));
     game_board = new tile_board(chunk(ecol.tiles, H));
-    svg_board.drawBackground(W, H);
+    svg_board.drawBackground(gameDim(), W, H);
     svg_board.drawTiles(game_board);
     let ix = game_board.add_tile()[0];
     let new_tile = game_board.cols[ix[0]][ix[1]];
@@ -116,7 +112,7 @@ async function process_keystroke(evt: KeyboardEvent): Promise<void> {
         // console.info(`Key ${key} was pressed, moving ${dir}.`);
         mv = game_board.move_tiles(dir);
     }
-    if (game_board.danzo) {
+    if (game_board.no_move) {
         done = true;
         lose();
     }
@@ -140,7 +136,7 @@ document.addEventListener('keyup', process_keystroke);
 window.addEventListener('load', setupRangeSliders);
 
 window.addEventListener('load', function () {
-    svg_board = createSVGboard();
+    svg_board = new tboard(getTheme());
     D3select("#board").style('min-height', `${gameDim() + 20}px`);
     // controls/options for game (UI is exclusive to front-end)
     id('start_game').addEventListener('click', setup);
@@ -166,7 +162,8 @@ window.addEventListener('load', function () {
             // might not want to update this here?
             const [W, H] = getSliderVals();
             svg_board.setTheme(getTheme());
-            svg_board.drawBackground(W, H);
+            // in this case, use requested_size to ensure the board isn't resized
+            svg_board.drawBackground(svg_board.requested_size,W, H);
             svg_board.drawTiles(game_board);
             busy = false;
         }
@@ -178,9 +175,8 @@ window.addEventListener('load', function () {
         const [newWidth, newHeight] = [window.innerWidth, window.innerHeight];
         const [canvasW, canvasH] = [svg_board.canvasSize.width, svg_board.canvasSize.height];
         // only resize if the current dimensions are significantly different:
-        
-        // resize the board with the new constraints..
-        // want to add a resize method to tile_board.ts?
-        // svg_board.resize(gameDim(),game_board);
+        if(false) {
+            svg_board.resize(gameDim(),game_board);
+        }
     });
 });
