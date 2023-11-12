@@ -95,7 +95,7 @@ const setup = function (): void {
     svg_board.drawTiles(game_board);
     let ix = game_board.add_tile()[0];
     let new_tile = game_board.cols[ix[0]][ix[1]];
-    svg_board.drawTile(new_tile, ix[0], ix[1]);
+    svg_board.drawTile(ix[0], ix[1],new_tile.val,true);
     svg_board.updateScore(0);
     busy = false; done = false;
 }
@@ -122,9 +122,10 @@ async function process_keystroke(evt: KeyboardEvent): Promise<void> {
     }
     if (mv.length > 1) {
         svg_board.drawTiles(game_board);
+        svg_board.updateScore(game_board.score);
         await sleep(200);
         let tloc = game_board.add_tile()[0]; // returns indices of added tiles
-        svg_board.drawTile(game_board.cols[tloc[0]][tloc[1]], tloc[0], tloc[1]);
+        svg_board.drawTile(tloc[0], tloc[1],game_board.cols[tloc[0]][tloc[1]].val,true);
     }
     busy = false;
 }

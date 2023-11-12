@@ -55,7 +55,7 @@ $roundSwitchDim: 26px;
 
 /* title */
 #game-title {
-    margin-top: 1rem;
+    padding-top: 1rem;
     font-size: 3em;
     text-align: center;
     color: #5B4F4A;
@@ -63,7 +63,6 @@ $roundSwitchDim: 26px;
 }
 
 .score_font {
-    // fill: blanchedalmond
     font-size: 2rem;
     font-family: $score-fonts;
 }
