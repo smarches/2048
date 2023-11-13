@@ -83,6 +83,7 @@ class tboard {
     tile_dim: number;
     text_adj: number;
     font_size: string;
+    score_font_size: string;
     // attributes related to the game
     score: number;
     in_play: Boolean;
@@ -103,11 +104,14 @@ class tboard {
         this.text_adj = 0.5 * this.tile_size - this.tile_gap;
         this.tile_rad = 0.125 * this.tile_size;
         this.tile_dim = this.tile_size - 2 * this.tile_gap;
-        const fontAdj = (5 - Math.log2(Math.max(W, H))).toFixed(1);
-        this.font_size = fontAdj + 'rem';
+        // font size needs scaling relative to both grid size (W/H) and board size
+        let fontAdj = (5 - Math.log2(Math.max(W, H)));
+        // linear interpolation from 1 @500 size down to 0.5@ 200 size
+        fontAdj *= this.requested_size > 500 ? 1 : Math.max(0.5,this.requested_size/600 + 1/6);
+        this.font_size = fontAdj.toFixed(1) + 'rem';
     }
 
-    setSizeParams(size: number,W:number,H:number) {
+    setSizeParams(size: number, W: number, H: number) {
         /**
          * Determine size parameters based on requested board size.
          * 
@@ -116,22 +120,23 @@ class tboard {
          * @param H - number of tiles in the vertical direction
          */
         this.requested_size = size;
-        let [sizeW,sizeH] = [size,size];
-        if(W !== H) {
-            const newWidth = (W/H) * size;
-            [sizeW,sizeH] = scale_rect(newWidth,size,size,size);
+        let [sizeW, sizeH] = [size, size];
+        if (W !== H) {
+            const newWidth = (W / H) * size;
+            [sizeW, sizeH] = scale_rect(newWidth, size, size, size);
         }
-        console.debug(`Board dimensions: ${sizeW} x ${sizeH}`);
-        const sizeMin = Math.min(sizeW,sizeH);
+        const sizeMin = Math.min(sizeW, sizeH);
         this.sep = Math.round(0.05 * sizeMin);
         this.boardSize = { width: sizeW, height: sizeH };
         this.scoreBoxSize = { width: 0.4 * sizeW, height: 0.17 * sizeH };
-        this.canvasSize = { width: sizeW + 2 * this.sep, height: sizeH + 3*this.sep + this.scoreBoxSize.height };
+        let scoreNumSize = 2.5 * (this.requested_size >= 500 ? 1 : Math.max(0.5,this.requested_size/600 + 1/6));
+        this.score_font_size = scoreNumSize.toFixed(1) + 'rem';
+        this.canvasSize = { width: sizeW + 2 * this.sep, height: sizeH + 3 * this.sep + this.scoreBoxSize.height };
         // for conveneince, store the offset of the board
         this.XYoffset = { width: this.sep, height: 2 * this.sep + this.scoreBoxSize.height };
-        this.setTileParams(W,H);
+        this.setTileParams(W, H);
     }
-    
+
     setTheme(theme: BoardTheme) {
         this.theme = theme;
     }
@@ -154,7 +159,6 @@ class tboard {
         const yOffset = y0 + 0.8 * yW;
         const n = val || this.score;
         const delta = Math.max(0, n - this.score);
-        // console.info(`old score = ${this.score} and delta = ${delta}`);
         const cv = D3select('#game_box');
         let digits = String(n).split('');
         digits.forEach((e, i) => {
@@ -162,6 +166,7 @@ class tboard {
                 .attr('x', 1.05 * x0 + 0.16 * xW * i)
                 .attr('y', yOffset)
                 .attr('class', 'score_font')
+                .attr('font-size',this.score_font_size)
                 .attr('fill', this.theme.score_text)
                 .html(e);
         });
@@ -197,33 +202,36 @@ class tboard {
     }
 
     drawGridLines(numW: number, numH: number) {
-        const bg_stroke = this.theme.bg_line; // coordinate bg with tile colors
-        const [gapH, gapV] = [this.boardSize.width / numW, this.boardSize.height / numH]; // 'latitudes' and 'longitudes'
+        /**
+         * Draw grid lines between tiles
+         * 
+         * @param numW - number of tiles in horizontal direction (creates numW-1 vertical lines)
+         * @param numH - number of tiles in vertical direction (creates numH-1 horizontal lines)
+         */
+        const [gapH, gapV] = [this.boardSize.width / numW, this.boardSize.height / numH];
         const [offsetX, offsetY] = [this.XYoffset.width, this.XYoffset.height];
-        // grid lines between tiles
-        const canvas = D3select('#game_box');
-        for (let i = 1; i < numW; i++) { // longitudes (vertical lines)
+        let lineSpec = [];
+        for (let i = 1; i < numW; i++) {
             const xx = (offsetX + i * gapH).toFixed(1);
-            canvas.append('line')
-                .attr('x1', xx).attr('y1', offsetY)
-                .attr('x2', xx).attr('y2', offsetY + this.boardSize.height)
-                .attr('class', 'tile_grid').attr('stroke', bg_stroke);
+            lineSpec.push({ x1: xx, y1: offsetY, x2: xx, y2: offsetY + this.boardSize.height });
         }
-        for (let j = 1; j < numH; j++) { // latitudes (horizontal lines)
+        for (let j = 1; j < numH; j++) {
             const yy = (offsetY + j * gapV).toFixed(1);
-            canvas.append('line')
-                .attr('x1', offsetX).attr('y1', yy)
-                .attr('x2', offsetX + this.boardSize.width).attr('y2', yy)
-                .attr('class', 'tile_grid').attr('stroke', bg_stroke);
+            lineSpec.push({ x1: offsetX, y1: yy, x2: offsetX + this.boardSize.width, y2: yy });
         }
+        const canvas = D3select('#game_box');
+        lineSpec.forEach(e => {
+            canvas.append('line').attr('x1', e.x1).attr('y1', e.y1).attr('x2', e.x2).attr('y2', e.y2)
+                .attr('class', 'tile_grid').attr('stroke', this.theme.bg_line)
+        });
     }
 
-    drawBackground(size:number, numW: number, numH: number): void {
+    drawBackground(size: number, numW: number, numH: number): void {
         /**
          * Given the canvas size, draw the UI elements inside it
          */
         this.dim = [numW, numH];
-        this.setSizeParams(size,numW,numH);
+        this.setSizeParams(size, numW, numH);
 
         D3select("body").style("background-color", this.theme.body_bg);
         D3select("#board").html(''); // clear existing
@@ -238,7 +246,7 @@ class tboard {
         const [x0, y0, xW, yW] = this.scoreXY;
         canvas.append('rect').attr('x', x0).attr('y', y0)
             .attr('width', xW).attr('height', yW)
-            .attr("id", 'score_box').attr('rx', 5).attr('ry', 5); // ideally make rx/ry scale
+            .attr("id", 'score_box').attr('rx', (0.01 * size).toFixed(1)).attr('ry', (0.01 * size).toFixed(1));
         this.updateScore(this.score);
 
         // the board itself
@@ -325,11 +333,8 @@ class tboard {
             .attr('fill', col).attr('fill-opacity', 0.33);
     }
     resize(size: number, board: tile_board): void {
-        // redraw the background (this resizes if needed):
         this.drawBackground(size, board.W, board.H);
-        // redraw the tiles:
         this.drawTiles(board);
-        return;
     }
 }
 

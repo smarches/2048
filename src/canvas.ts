@@ -12,24 +12,9 @@
 // [ ] end of game/reset
 // [ ] lettering of score box
 // [ ] sounds (consult https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and see https://github.com/goldfire/howler.js/
-// [ ] size board to fit vertical screen height
-// [ ] size score box relative to board size
-// [ ] coordinate sizes of things on board with total dimension (default 500 but can scale down)
 // [ ] z-axis in D3? Want dots above background tiles/grid but below numbered tiles
-// [x] tile appearance should scale with board layout (cannot have abs. rx/ry/font-size)
-// [x] material switch and second color theme
-// [x] score change 'animation' w/ css3 transition or d3 transition
-// [x] add theme colors to score box
-// [x] button to coordinate sizing (start game)
-// [x] keypress
-// [x] animation delay
-// [x] reset everything on window reload
-// [x] disable adding new tile when nothing changes
-// [x] new tile animation with css transitions (doesn't work since classes are not enumerated manually)
-// [x] coordinate color of numbers with tile bg color
-// [x] excise all but necessary d3 dependencies
-// [x] fancify background (random size/shading - doens't look great)
-// [x] bug when switching colors and board size sliders have been changed (need one more abstraction for drawBackground)
+// [ ] fancify background (random size/shading - doens't look great)
+// [ ] reset everything on window reload (including W/H sliders)
 
 import { select as D3select } from "d3-selection";
 import { themes } from './themes';
@@ -170,12 +155,15 @@ window.addEventListener('load', function () {
     }
 
     window.addEventListener('resize',() => {
-        // console.log(`The window was resized! Dims now ${window.innerWidth} x ${window.innerHeight}`);
-        // this also prevents resizing too often if something is being dragged
-        const [newWidth, newHeight] = [window.innerWidth, window.innerHeight];
+        // if we didn't start yet, no need to resize
+        if(!svg_board.in_play) return;
+        const newDim = gameDim();
         const [canvasW, canvasH] = [svg_board.canvasSize.width, svg_board.canvasSize.height];
         // only resize if the current dimensions are significantly different:
-        if(false) {
+        const pct_diff_W = 100 * Math.abs(newDim - canvasW) / (canvasW + 1);
+        const pct_diff_H = 100 * Math.abs(newDim - canvasH) / (canvasH + 1);
+        if(Math.max(pct_diff_H,pct_diff_W) > 15) {
+            // console.debug(`Resizing: old dims ${canvasW} x ${canvasH}, new dim ${newDim}`);
             svg_board.resize(gameDim(),game_board);
         }
     });
